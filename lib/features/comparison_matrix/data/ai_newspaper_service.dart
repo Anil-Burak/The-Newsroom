@@ -1,5 +1,7 @@
+import 'dart:io';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:http/io_client.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../gatekeeping/domain/news_item.dart';
 import '../../../core/constants/app_constants.dart';
@@ -65,29 +67,23 @@ class AINewspaperService extends StateNotifier<AINewspaperState> {
     {
       'id': 'persona_public',
       'name': 'Kamu Yayıncısı',
-      'bias':
-          'Neutral, civic-minded, focuses on public interest and democratic accountability.',
-      'ethics':
-          'Very high. Strict fact-checking, no sensationalism, balanced perspectives required.',
-      'clickbaitThreshold': 15,
+      'bias': 'Devletin bekasını, kamu düzenini ve toplum ahlakını ön planda tutar. Muhalif çatlak sesleri ve sansasyonel haberleri filtreler.',
+      'ethics': 'Resmi kaynaklara dayanmayan hiçbir habere yer vermez. Skandallardan ve magazinden nefret eder. Sıkıcı ama güvenilirdir.',
+      'clickbaitThreshold': 10,
     },
     {
       'id': 'persona_tabloid',
       'name': 'Ticari Magazin',
-      'bias':
-          'Sensationalist. Heavily favors high emotional impact, celebrity gossip, crime, and scandal.',
-      'ethics':
-          'Low. Will publish unverified rumors if engaging enough. Prioritizes clicks over truth.',
-      'clickbaitThreshold': 85,
+      'bias': 'Sadece okunma sayısı, reklam geliri ve viral potansiyeli umrundadır. Şiddet, aldatma, ünlüler ve skandallar favorisidir.',
+      'ethics': 'Etik kuralları yok sayar. Doğrulanmamış dedikoduları bile tıklanma uğruna manşete taşır. Başlıkları aşırı abartılıdır.',
+      'clickbaitThreshold': 95,
     },
     {
       'id': 'persona_independent',
       'name': 'Bağımsız',
-      'bias':
-          'Progressive, anti-establishment. Prioritizes underreported stories, activism, and systemic issues.',
-      'ethics':
-          'High on principles, but may take a strong editorial stance. Avoids corporate-friendly narratives.',
-      'clickbaitThreshold': 40,
+      'bias': 'Sisteme ve büyük sermayeye karşı muhaliftir. İnsan hakları, çevre sorunları, yolsuzluk ve sansürlenmiş gerçeklerin peşindedir.',
+      'ethics': 'Editoryal bağımsızlığı her şeyden üstündür. Haberin kaynağı güvenilirse, hükümeti veya şirketleri kızdırmaktan çekinmez.',
+      'clickbaitThreshold': 30,
     },
   ];
 
@@ -120,69 +116,116 @@ class AINewspaperService extends StateNotifier<AINewspaperState> {
 
       final personasJson = jsonEncode(_defaultPersonas);
 
-      const systemPrompt = '''You are the simulation engine for "GateKeeper", an educational game about news selection bias (Gatekeeping Theory by Kurt Lewin & David Manning White).
+      const systemPrompt = '''Sen "GateKeeper" adlı habercilik etiği ve yayın yönetmenliği oyununun simülasyon motorusun. 
+Görevin, sana verilen haber havuzundaki içerikleri 3 farklı editör (persona) gözünden incelemek ve yayınlanacak haberleri seçmektir.
 
-CONTEXT:
-You will receive a pool of news items and 3 editor personas. Each persona has distinct values, ethics, and a clickbaitThreshold (0–100, where 100 = will publish any sensational content, 0 = only calm factual pieces).
+SİSTEM KURALLARI:
+1. Her persona, kendi "bias" (taraf/ideoloji), "ethics" (etik anlayışı) ve "clickbaitThreshold" (tık tuzağı eşiği) değerlerine göre tamamen bağımsız seçimler yapmalıdır.
+2. Her persona en az 3, en fazla 6 haber SEÇMEK zorundadır. Kalan haberleri reddetmelidir.
+3. Personalar aynı haberleri seçmek zorunda değildir. Kararlar tamamen karakterlerine özgü olmalıdır.
+4. Her persona, havuzdaki İSTİSNASIZ TÜM HABERLER (hem seçtikleri hem reddettikleri) için o karakterin ağzından yazılmış 1 cümlelik bir gerekçe (Justification Log) sunmalıdır.
 
-TASK:
-Simulate each of the 3 editor personas independently reviewing the provided news pool.
-For EACH persona:
-1. SELECT between 3 and 6 news items to publish, based STRICTLY on their bias, ethics, and clickbaitThreshold. Do NOT select fewer than 3 or more than 6.
-2. REJECT all remaining items.
-3. Write a brief, 1-sentence "Justification Log" for EVERY item in the pool (both selected and rejected), written in the first-person voice of THAT persona's character. Examples:
-   - Public Broadcaster on a celebrity scandal: "This story lacks public interest value and would undermine our credibility."
-   - Tabloid on the same story: "This is pure gold — our readers live for this kind of drama."
-   - Independent on a corporate tax story: "This exposes systemic inequality that our mainstream competitors won't touch."
+ÇIKTI FORMATI:
+Hiçbir açıklama veya düşünce süreci (thinking process) belirtmeden SADECE aşağıdaki JSON formatında yanıt ver! 
+Markdown formatını kullanma, sadece doğrudan raw JSON çıktısı ver.
 
-CRITICAL RULES:
-- Your output MUST be valid JSON only, no markdown, no preamble, no explanation.
-- Justifications MUST cover ALL items in the pool for each persona.
-- Do NOT let personas select the same set of articles; their choices should reflect their distinct biases.
-
-OUTPUT FORMAT (strict JSON):
 {
   "persona_public": {
-    "selected": ["news_id_1", "news_id_3"],
+    "selected": ["news_id_1", "news_id_3", "news_id_5"],
     "justifications": {
-      "news_id_1": "justification string from this persona's voice",
-      "news_id_2": "justification string from this persona's voice"
+      "news_id_1": "Karakterin ağzından 1 cümlelik gerekçe",
+      "news_id_2": "Karakterin ağzından 1 cümlelik gerekçe"
     }
   },
-  "persona_tabloid": { ... },
-  "persona_independent": { ... }
+  "persona_tabloid": {
+    "selected": ["news_id_2", "news_id_4", "news_id_6"],
+    "justifications": {
+      "news_id_1": "Karakterin ağzından 1 cümlelik gerekçe"
+    }
+  },
+  "persona_independent": {
+    "selected": ["news_id_7", "news_id_8", "news_id_9"],
+    "justifications": {
+      "news_id_1": "Karakterin ağzından 1 cümlelik gerekçe"
+    }
+  }
 }''';
 
       final userPrompt =
-          'NEWS POOL (${allNewsItems.length} items):\n$newsJson\n\nEDITOR PERSONAS (3 personas):\n$personasJson\n\nGenerate the three distinct newspapers now.';
+          'NEWS POOL (${allNewsItems.length} items):\n$newsJson\n\nEDITOR PERSONAS (3 personas):\n$personasJson\n\n'
+          'CRITICAL INSTRUCTION: DO NOT WRITE A THINKING PROCESS! SKIP THE ANALYSIS! '
+          'You MUST start your response immediately with a { character.';
 
-      final response = await http.post(
-        Uri.parse('https://api.openai.com/v1/chat/completions'),
+      // Sertifika doğrulama hatalarını atlamak için özel HTTP istemcisi (Bad Certificate Bypass)
+      final ioClient = HttpClient()
+        ..badCertificateCallback = ((X509Certificate cert, String host, int port) => true);
+      final client = IOClient(ioClient);
+
+      final response = await client.post(
+        Uri.parse('https://llmstat.iletisim.gov.tr/v1/chat/completions'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer ${AppConstants.openAiApiKey}',
         },
         body: jsonEncode({
-          'model': 'gpt-4o',
-          'response_format': {'type': 'json_object'},
+          'model': 'qwen-397b',
           'messages': [
             {'role': 'system', 'content': systemPrompt},
             {'role': 'user', 'content': userPrompt},
+            {'role': 'assistant', 'content': '{\n  "persona_public": {'}
           ],
-          'temperature': 0.85,
-          'max_tokens': 4000,
+          'temperature': 0.7,
+          'max_tokens': 8192,
         }),
       );
+      
+      // Kaynak sızıntısını önlemek için client'ı kapatıyoruz
+      client.close();
 
       if (response.statusCode != 200) {
         throw Exception(
-            'OpenAI API error ${response.statusCode}: ${response.body}');
+            'API error ${response.statusCode}: ${response.body}');
       }
 
       final responseBody = jsonDecode(response.body) as Map<String, dynamic>;
-      final content =
+      String rawContent =
           responseBody['choices'][0]['message']['content'] as String;
-      final data = jsonDecode(content) as Map<String, dynamic>;
+      
+      // Eğer assistant prefill kullandıysak model geri kalanı tamamlar.
+      // İçinde baştaki kısım yoksa (çoğu API eklemez), biz manuel eklemeliyiz.
+      String content = rawContent;
+      if (!content.trimLeft().startsWith('{')) {
+        content = '{\n  "persona_public": {' + content;
+      }
+      
+      // Temizlik aşaması: <think> veya Thinking Process gibi blokları ayıkla
+      if (content.contains('</think>')) {
+        content = content.split('</think>').last;
+      }
+      
+      // JSON Markdown (```json ... ```) ile sarılmışsa onu ayıkla
+      if (content.contains('```json')) {
+        content = content.split('```json')[1].split('```')[0];
+      } else if (content.contains('```')) {
+        content = content.split('```')[1].split('```')[0];
+      }
+
+      // En güvenilir yol olarak sadece { ile } arasını al
+      final startIndex = content.indexOf('{');
+      final endIndex = content.lastIndexOf('}');
+      if (startIndex != -1 && endIndex != -1) {
+        content = content.substring(startIndex, endIndex + 1);
+      } else {
+        throw Exception('API çıktısında JSON başlangıç veya bitiş karakteri bulunamadı. Model sadece düz metin üretmiş olabilir.');
+      }
+
+      Map<String, dynamic> data;
+      try {
+        data = jsonDecode(content) as Map<String, dynamic>;
+      } catch (e) {
+        throw Exception(
+            'JSON Parse Error: $e\n\nExtracted Content:\n$content\n\nRaw Model Output:\n${responseBody['choices'][0]['message']['content']}');
+      }
 
       final newspapers = <String, AINewspaper>{};
       for (final entry in data.entries) {

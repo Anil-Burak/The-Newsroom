@@ -36,5 +36,5 @@ class AppConstants {
 
   // ── OpenAI ───────────────────────────────────────────────────────────────
   // ⚠️  API key is embedded for institutional use — do not commit to public repos.
-  static const String openAiApiKey = 'YOUR_OPENAI_API_KEY_HERE';
+  static const String openAiApiKey = 'sk-RahqhyzW7m8jMK50RzYkCQ';
 }

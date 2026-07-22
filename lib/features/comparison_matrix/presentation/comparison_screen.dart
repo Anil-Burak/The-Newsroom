@@ -113,6 +113,7 @@ class _ComparisonScreenState extends ConsumerState<ComparisonScreen>
                 ),
                 child: TabBar(
                   controller: _tabController,
+                  indicatorSize: TabBarIndicatorSize.tab,
                   indicator: BoxDecoration(
                     color: AppColors.gold,
                     borderRadius: BorderRadius.circular(10),
