@@ -48,6 +48,10 @@ class _ComparisonScreenState extends ConsumerState<ComparisonScreen>
       _initTabs(selectedPersonas);
     }
 
+    final now = DateTime.now();
+    final months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+    final dateString = '${now.day} ${months[now.month - 1]} ${now.year}';
+
     final allTabs = [
       const Tab(text: 'SEN'),
       ...selectedPersonas.map((p) => Tab(text: p.name.toUpperCase())),
@@ -66,7 +70,11 @@ class _ComparisonScreenState extends ConsumerState<ComparisonScreen>
                   children: [
                     // Back to home button
                     GestureDetector(
-                      onTap: () => context.go(AppConstants.routePersonaSelection),
+                      onTap: () {
+                        ref.read(gatekeeperProvider.notifier).reset();
+                        ref.invalidate(aiNewspaperServiceProvider);
+                        context.go(AppConstants.routePersonaSelection);
+                      },
                       child: Container(
                         width: 36,
                         height: 36,
@@ -96,7 +104,7 @@ class _ComparisonScreenState extends ConsumerState<ComparisonScreen>
                         border: Border.all(color: AppColors.glassBorder),
                       ),
                       child: Text(
-                        '12 AUG 2026',
+                        dateString,
                         style: Theme.of(context).textTheme.bodySmall,
                       ),
                     ),
@@ -145,6 +153,9 @@ class _ComparisonScreenState extends ConsumerState<ComparisonScreen>
                           aiState: aiState,
                           allNews: gatekeeperState.acceptedCards +
                               gatekeeperState.rejectedCards,
+                          userAcceptedIds: gatekeeperState.acceptedCards
+                              .map((n) => n.id)
+                              .toSet(),
                         )),
                   ],
                 ),
@@ -201,12 +212,14 @@ class _AINewspaperTab extends StatelessWidget {
   final String personaLabel;
   final AINewspaperState aiState;
   final List<NewsItem> allNews;
+  final Set<String> userAcceptedIds;
 
   const _AINewspaperTab({
     required this.personaId,
     required this.personaLabel,
     required this.aiState,
     required this.allNews,
+    required this.userAcceptedIds,
   });
 
   @override
@@ -258,6 +271,7 @@ class _AINewspaperTab extends StatelessWidget {
                 status: 'published',
                 justification: newspaper.justifications[n.id] ??
                     'Geçerlilik açıklaması bulunmuyor.',
+                isUserAccepted: userAcceptedIds.contains(n.id),
               )),
           const SizedBox(height: 16),
           _SectionHeader(title: '🗑️ $personaLabel tarafından reddedilen'),
@@ -266,6 +280,7 @@ class _AINewspaperTab extends StatelessWidget {
                 status: 'rejected',
                 justification: newspaper.justifications[n.id] ??
                     'Geçerlilik açıklaması bulunmuyor.',
+                isUserAccepted: userAcceptedIds.contains(n.id),
               )),
         ],
       ),
@@ -295,11 +310,13 @@ class _ArticleRow extends StatelessWidget {
   final NewsItem news;
   final String status;
   final String justification;
+  final bool? isUserAccepted;
 
   const _ArticleRow({
     required this.news,
     required this.status,
     required this.justification,
+    this.isUserAccepted,
   });
 
   @override
@@ -340,9 +357,15 @@ class _ArticleRow extends StatelessWidget {
               maxLines: 2,
               overflow: TextOverflow.ellipsis),
           subtitle: Text(news.category,
-              style: Theme.of(context).textTheme.bodySmall),
-          trailing: const Icon(Icons.info_outline_rounded,
-              color: AppColors.gold, size: 18),
+              style: const TextStyle(
+                  color: AppColors.textSecondary, fontSize: 11)),
+          trailing: isUserAccepted == null
+              ? const Icon(Icons.info_outline_rounded, color: AppColors.gold, size: 18)
+              : Icon(
+                  isUserAccepted! ? Icons.check_circle_rounded : Icons.cancel_rounded,
+                  color: isUserAccepted! ? AppColors.publishGreen : AppColors.rejectRed,
+                  size: 20,
+                ),
         ),
       ),
     );

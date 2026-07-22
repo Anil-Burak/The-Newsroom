@@ -223,8 +223,13 @@ Markdown formatını kullanma, sadece doğrudan raw JSON çıktısı ver.
       try {
         data = jsonDecode(content) as Map<String, dynamic>;
       } catch (e) {
-        throw Exception(
-            'JSON Parse Error: $e\n\nExtracted Content:\n$content\n\nRaw Model Output:\n${responseBody['choices'][0]['message']['content']}');
+        // BULLETPROOF FALLBACK PARSER
+        // Eğer JSON yarım kaldıysa (max_tokens bittiyse) veya bozuksa, RegExp ile kurtarabildiğimiz kadarını kurtarırız.
+        data = _bulletproofParse(rawContent);
+        
+        if (data.isEmpty || (data['persona_public']['selected'] as List).isEmpty) {
+          throw Exception('Kritik Hata: JSON yarım kaldı ve Bulletproof Parser da veri çıkaramadı.\nRaw Output:\n$rawContent');
+        }
       }
 
       final newspapers = <String, AINewspaper>{};
@@ -245,6 +250,51 @@ Markdown formatını kullanma, sadece doğrudan raw JSON çıktısı ver.
         error: e.toString(),
       );
     }
+  }
+
+  /// JSON yapısı bozuk olsa bile Regex ile verileri ayıklayan kurtarıcı fonksiyon (Bulletproof Parser)
+  Map<String, dynamic> _bulletproofParse(String content) {
+    final Map<String, dynamic> data = {};
+    final personas = ['persona_public', 'persona_tabloid', 'persona_independent'];
+
+    for (final p in personas) {
+      data[p] = {
+        'selected': <String>[],
+        'justifications': <String, dynamic>{}
+      };
+
+      final pIndex = content.indexOf('"$p"');
+      if (pIndex == -1) continue;
+
+      int nextPIndex = content.length;
+      for (final otherP in personas) {
+        if (otherP != p) {
+          final idx = content.indexOf('"$otherP"', pIndex + 1);
+          if (idx != -1 && idx < nextPIndex) {
+            nextPIndex = idx;
+          }
+        }
+      }
+
+      final block = content.substring(pIndex, nextPIndex);
+
+      // "selected": ["news_002", "news_013"] listesini ayıkla
+      final selectedRegex = RegExp(r'"selected"\s*:\s*\[(.*?)\]', dotAll: true);
+      final selectedMatch = selectedRegex.firstMatch(block);
+      if (selectedMatch != null) {
+        final idsStr = selectedMatch.group(1) ?? '';
+        final idRegex = RegExp(r'"(news_\d+)"');
+        data[p]['selected'] = idRegex.allMatches(idsStr).map((m) => m.group(1)!).toList();
+      }
+
+      // "news_001": "Gerekçe" eşleşmelerini ayıkla (Kaçış karakterleri dahil her türlü metni kapsar)
+      final justRegex = RegExp(r'"(news_\d+)"\s*:\s*"([^"\\]*(?:\\.[^"\\]*)*)"');
+      final justMatches = justRegex.allMatches(block);
+      for (final m in justMatches) {
+        data[p]['justifications'][m.group(1)!] = m.group(2)!;
+      }
+    }
+    return data;
   }
 }
 

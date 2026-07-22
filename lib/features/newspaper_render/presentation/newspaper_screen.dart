@@ -7,6 +7,7 @@ import '../../../core/constants/app_constants.dart';
 import '../../gatekeeping/application/gatekeeper_notifier.dart';
 import '../../gatekeeping/domain/news_item.dart';
 import '../../persona_selection/application/persona_selection_notifier.dart';
+import '../../comparison_matrix/data/ai_newspaper_service.dart';
 
 class NewspaperScreen extends ConsumerWidget {
   const NewspaperScreen({super.key});
@@ -43,6 +44,7 @@ class NewspaperScreen extends ConsumerWidget {
         
         if (shouldPop == true && context.mounted) {
           ref.read(gatekeeperProvider.notifier).reset();
+          ref.invalidate(aiNewspaperServiceProvider);
           context.go(AppConstants.routePersonaSelection);
         }
       },
