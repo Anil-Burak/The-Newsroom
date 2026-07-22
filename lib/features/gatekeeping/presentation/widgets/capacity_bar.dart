@@ -22,7 +22,7 @@ class CapacityBar extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              'FRONT PAGE SLOTS',
+              'ÖN SAYFA SLOTLARI',
               style: Theme.of(context)
                   .textTheme
                   .bodySmall
@@ -74,10 +74,10 @@ class CapacityBar extends StatelessWidget {
         const SizedBox(height: 4),
         Text(
           current < min
-              ? 'Select at least $min articles to publish'
+              ? 'En az $min haber seçmelisiniz'
               : current == max
-                  ? 'Front page full!'
-                  : 'You can add ${max - current} more, or go to print now',
+                  ? 'Ön sayfa dolu!'
+                  : '${max - current} haber daha ekleyebilir ya da şimdi baskıya gönderebilirsiniz',
           style: Theme.of(context).textTheme.bodySmall,
         ),
       ],

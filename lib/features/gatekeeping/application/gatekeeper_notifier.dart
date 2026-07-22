@@ -8,6 +8,7 @@ enum SwipePhaseStatus { idle, loading, ready, fullCapacity, finished, error }
 
 class GatekeeperState {
   final List<NewsItem> upcomingCards;
+  final int currentIndex;
   final List<NewsItem> acceptedCards;
   final List<NewsItem> rejectedCards;
   final SwipePhaseStatus status;
@@ -16,6 +17,7 @@ class GatekeeperState {
 
   const GatekeeperState({
     this.upcomingCards = const [],
+    this.currentIndex = 0,
     this.acceptedCards = const [],
     this.rejectedCards = const [],
     this.status = SwipePhaseStatus.idle,
@@ -27,11 +29,12 @@ class GatekeeperState {
   int get remainingSlots => AppConstants.maxPublishedArticles - acceptedCount;
   bool get isAtMinimum => acceptedCount >= AppConstants.minPublishedArticles;
   bool get isAtCapacity => acceptedCount >= AppConstants.maxPublishedArticles;
-  bool get deckIsEmpty => upcomingCards.isEmpty;
+  bool get deckIsEmpty => currentIndex >= upcomingCards.length;
   bool get canProceed => isAtMinimum && (isAtCapacity || deckIsEmpty);
 
   GatekeeperState copyWith({
     List<NewsItem>? upcomingCards,
+    int? currentIndex,
     List<NewsItem>? acceptedCards,
     List<NewsItem>? rejectedCards,
     SwipePhaseStatus? status,
@@ -40,6 +43,7 @@ class GatekeeperState {
   }) =>
       GatekeeperState(
         upcomingCards: upcomingCards ?? this.upcomingCards,
+        currentIndex: currentIndex ?? this.currentIndex,
         acceptedCards: acceptedCards ?? this.acceptedCards,
         rejectedCards: rejectedCards ?? this.rejectedCards,
         status: status ?? this.status,
@@ -60,6 +64,12 @@ class GatekeeperNotifier extends StateNotifier<GatekeeperState> {
     state = state.copyWith(status: SwipePhaseStatus.loading);
     try {
       final items = await _newsRepository.fetchNewsPool();
+      
+      // Haberleri karıştır ama arkadaki ilk 2 haberin sabit kalması için 
+      // sırayı tamamen bozmak yerine rastgele bir dizilişle başlayalım.
+      // Firebase'den geldiğinde zaten belirli bir sırada olabilir.
+      items.shuffle(); // Tüm desteyi başta bir kez karıştır
+      
       state = state.copyWith(
         upcomingCards: items,
         status: SwipePhaseStatus.ready,
@@ -82,13 +92,12 @@ class GatekeeperNotifier extends StateNotifier<GatekeeperState> {
     }
 
     final newAccepted = [...state.acceptedCards, card];
-    final newUpcoming = state.upcomingCards.where((n) => n.id != card.id).toList();
     final newStatus = newAccepted.length >= AppConstants.maxPublishedArticles
         ? SwipePhaseStatus.fullCapacity
         : SwipePhaseStatus.ready;
 
     state = state.copyWith(
-      upcomingCards: newUpcoming,
+      currentIndex: state.currentIndex + 1,
       acceptedCards: newAccepted,
       status: newStatus,
     );
@@ -98,15 +107,15 @@ class GatekeeperNotifier extends StateNotifier<GatekeeperState> {
   /// Called on Swipe Left — rejects the top card.
   void rejectCard(NewsItem card) {
     final newRejected = [...state.rejectedCards, card];
-    final newUpcoming = state.upcomingCards.where((n) => n.id != card.id).toList();
+    final newIndex = state.currentIndex + 1;
 
     // If deck is now empty, determine if we can proceed
-    final newStatus = newUpcoming.isEmpty
+    final newStatus = newIndex >= state.upcomingCards.length
         ? SwipePhaseStatus.finished
         : SwipePhaseStatus.ready;
 
     state = state.copyWith(
-      upcomingCards: newUpcoming,
+      currentIndex: newIndex,
       rejectedCards: newRejected,
       status: newStatus,
     );
@@ -115,8 +124,12 @@ class GatekeeperNotifier extends StateNotifier<GatekeeperState> {
   /// Rescue a rejected card back into the upcoming deck (allows user to reconsider).
   void rescueRejectedCard(NewsItem card) {
     final newRejected = state.rejectedCards.where((n) => n.id != card.id).toList();
+    // Destedeki sıradaki kart olması için currentIndex'e ekliyoruz
+    final newUpcoming = List<NewsItem>.from(state.upcomingCards);
+    newUpcoming.insert(state.currentIndex, card);
+    
     state = state.copyWith(
-      upcomingCards: [card, ...state.upcomingCards],
+      upcomingCards: newUpcoming,
       rejectedCards: newRejected,
       status: SwipePhaseStatus.ready,
     );

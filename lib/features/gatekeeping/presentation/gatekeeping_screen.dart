@@ -55,8 +55,8 @@ class _GatekeepingScreenState extends ConsumerState<GatekeepingScreen> {
 
   void _onSwipe(int index, SwiperActivity activity) {
     final state = ref.read(gatekeeperProvider);
-    if (state.upcomingCards.isEmpty) return;
-    final card = state.upcomingCards[0];
+    if (state.deckIsEmpty) return;
+    final card = state.upcomingCards[state.currentIndex];
 
     if (activity is Swipe) {
       if (activity.direction == AxisDirection.right) {
@@ -102,10 +102,10 @@ class _GatekeepingScreenState extends ConsumerState<GatekeepingScreen> {
       builder: (_) => _GatekeeperModal(
         icon: Icons.newspaper_rounded,
         iconColor: AppColors.gold,
-        title: 'Front Page Full!',
+        title: 'Ön Sayfa Dolu!',
         subtitle:
-            'You\'ve selected ${AppConstants.maxPublishedArticles} articles. Your newspaper is ready to go to print.',
-        actionLabel: 'GO TO PRINT',
+            '${AppConstants.maxPublishedArticles} haber seçtiniz. Gazeteniz baskıya hazır.',
+        actionLabel: 'BASKIYA GÖNDER',
         onAction: () {
           Navigator.pop(context);
           ref.read(gatekeeperProvider.notifier).confirmSelection();
@@ -122,10 +122,10 @@ class _GatekeepingScreenState extends ConsumerState<GatekeepingScreen> {
       builder: (_) => _GatekeeperModal(
         icon: Icons.warning_amber_rounded,
         iconColor: AppColors.rejectRed,
-        title: 'Not Enough Articles!',
+        title: 'Yeterli Haber Yok!',
         subtitle:
-            'You need at least ${AppConstants.minPublishedArticles} articles to publish. Rescue some from the rejected pile.',
-        actionLabel: 'REVIEW REJECTED',
+            'Yayınlamak için en az ${AppConstants.minPublishedArticles} habere ihtiyacınız var. Reddedilenleri kurtarın.',
+        actionLabel: 'REDDEDILENLERI GÖRÜŞÜN',
         onAction: () {
           Navigator.pop(context);
           _showRejectedPile();
@@ -159,7 +159,7 @@ class _GatekeepingScreenState extends ConsumerState<GatekeepingScreen> {
             ),
             Padding(
               padding: const EdgeInsets.all(20),
-              child: Text('Rejected Articles',
+              child: Text('Reddedilen Haberler',
                   style: Theme.of(context).textTheme.displaySmall),
             ),
             Expanded(
@@ -218,18 +218,18 @@ class _GatekeepingScreenState extends ConsumerState<GatekeepingScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          persona?.name ?? 'Editor',
+                          persona?.name ?? 'Editör',
                           style: Theme.of(context)
                               .textTheme
                               .bodySmall
                               ?.copyWith(color: AppColors.gold, letterSpacing: 1.5),
                         ),
-                        Text('Newsroom',
+                        Text('Haber Odası',
                             style: Theme.of(context).textTheme.headlineSmall),
                       ],
                     ),
                     const Spacer(),
-                    // Cards remaining counter
+                      // Cards remaining counter
                     Container(
                       padding: const EdgeInsets.symmetric(
                           horizontal: 14, vertical: 8),
@@ -239,7 +239,7 @@ class _GatekeepingScreenState extends ConsumerState<GatekeepingScreen> {
                         border: Border.all(color: AppColors.glassBorder),
                       ),
                       child: Text(
-                        '${state.upcomingCards.length} left',
+                        '${state.upcomingCards.length - state.currentIndex} kaldı',
                         style: Theme.of(context).textTheme.labelLarge,
                       ),
                     ),
@@ -264,11 +264,12 @@ class _GatekeepingScreenState extends ConsumerState<GatekeepingScreen> {
                 child: state.status == SwipePhaseStatus.loading
                     ? const Center(
                         child: CircularProgressIndicator(color: AppColors.gold))
-                    : state.upcomingCards.isEmpty
+                    : state.deckIsEmpty
                         ? const SizedBox.shrink()
                         : AppinioSwiper(
                             controller: _swiperController,
                             cardCount: state.upcomingCards.length,
+                            initialIndex: state.currentIndex,
                             swipeOptions: const SwipeOptions.symmetric(
                               horizontal: true,
                             ),
@@ -291,7 +292,7 @@ class _GatekeepingScreenState extends ConsumerState<GatekeepingScreen> {
                   children: [
                     _SwipeHint(
                       icon: Icons.arrow_back_rounded,
-                      label: 'REJECT',
+                      label: 'REDDET',
                       color: AppColors.rejectRed,
                     ),
                     // Confirm early if eligible
@@ -306,11 +307,11 @@ class _GatekeepingScreenState extends ConsumerState<GatekeepingScreen> {
                         style: ElevatedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 20, vertical: 12)),
-                        child: const Text('GO TO PRINT'),
+                        child: const Text('BASKIYA GÖNDER'),
                       ),
                     _SwipeHint(
                       icon: Icons.arrow_forward_rounded,
-                      label: 'PUBLISH',
+                      label: 'YAYINLA',
                       color: AppColors.publishGreen,
                     ),
                   ],

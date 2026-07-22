@@ -5,6 +5,7 @@ import '../../../../core/theme/app_theme.dart';
 class PersonaCard extends StatelessWidget {
   final Persona persona;
   final bool isActive;
+  final bool isDisabled;
   final VoidCallback onTap;
   final VoidCallback onLongPress;
 
@@ -12,15 +13,18 @@ class PersonaCard extends StatelessWidget {
     super.key,
     required this.persona,
     required this.isActive,
+    this.isDisabled = false,
     required this.onTap,
     required this.onLongPress,
   });
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      onLongPress: onLongPress,
+    return Opacity(
+      opacity: isDisabled ? 0.45 : 1.0,
+      child: GestureDetector(
+        onTap: onTap,
+        onLongPress: isDisabled ? null : onLongPress,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 250),
         curve: Curves.easeOutCubic,
@@ -93,7 +97,7 @@ class PersonaCard extends StatelessWidget {
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: const Text(
-                            'CUSTOM',
+                            'ÖZEL',
                             style: TextStyle(
                               color: AppColors.gold,
                               fontSize: 9,
@@ -117,7 +121,7 @@ class PersonaCard extends StatelessWidget {
                   Row(
                     children: [
                       Text(
-                        'Clickbait Threshold: ',
+                        'Clickbait Eşiği: ',
                         style: Theme.of(context).textTheme.bodySmall,
                       ),
                       Expanded(
@@ -170,6 +174,7 @@ class PersonaCard extends StatelessWidget {
             ),
           ],
         ),
+      ),
       ),
     );
   }

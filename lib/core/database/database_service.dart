@@ -22,12 +22,19 @@ class DatabaseService {
 
     _db = await openDatabase(
       path,
-      version: 1,
+      version: 2,
       onCreate: _onCreate,
+      onUpgrade: _onUpgrade,
     );
   }
 
   // ─── Schema ───────────────────────────────────────────────────────────────
+  Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    await db.execute('DROP TABLE IF EXISTS news_pool');
+    await db.execute('DROP TABLE IF EXISTS personas');
+    await _onCreate(db, newVersion);
+  }
+
   Future<void> _onCreate(Database db, int version) async {
     await db.execute('''
       CREATE TABLE news_pool (

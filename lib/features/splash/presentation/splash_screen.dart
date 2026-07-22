@@ -87,21 +87,23 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                   const SizedBox(height: 28),
                   // Title
                   Text(
-                    'GATEKEEPER',
+                    'THE\nNEWSROOM',
+                    textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.displayLarge?.copyWith(
                           fontSize: 40,
+                          height: 1.2,
                           letterSpacing: 8,
                           foreground: Paint()
                             ..shader = const LinearGradient(
                               colors: [AppColors.goldDark, AppColors.goldLight],
                             ).createShader(
-                              const Rect.fromLTWH(0, 0, 300, 60),
+                              const Rect.fromLTWH(0, 0, 300, 100),
                             ),
                         ),
                   ),
                   const SizedBox(height: 10),
                   Text(
-                    'Who controls the news?',
+                    'Haberleri kim kontrol eder?',
                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                           color: AppColors.textSecondary,
                           letterSpacing: 2.0,
@@ -111,7 +113,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                   const SizedBox(height: 48),
                   // Attribution
                   Text(
-                    'Based on Lewin & White\'s Gatekeeping Theory',
+                    'Lewin & White Kapı Bekçisi Teorisi\'ne dayanmaktadır',
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
                 ],

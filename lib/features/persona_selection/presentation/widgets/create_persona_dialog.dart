@@ -4,7 +4,9 @@ import '../../domain/persona.dart';
 import '../../../../core/theme/app_theme.dart';
 
 class CreatePersonaDialog extends StatefulWidget {
-  const CreatePersonaDialog({super.key});
+  /// If provided, the dialog opens in edit mode pre-filled with this persona.
+  final Persona? editTarget;
+  const CreatePersonaDialog({super.key, this.editTarget});
 
   @override
   State<CreatePersonaDialog> createState() => _CreatePersonaDialogState();
@@ -22,6 +24,21 @@ class _CreatePersonaDialogState extends State<CreatePersonaDialog> {
   static const _emojiOptions = ['🗞️', '📰', '📺', '📻', '🎙️', '🖥️', '📡', '✏️'];
 
   @override
+  void initState() {
+    super.initState();
+    // Pre-fill fields if editing an existing persona
+    final t = widget.editTarget;
+    if (t != null) {
+      _nameController.text = t.name;
+      _descController.text = t.description;
+      _biasController.text = t.aiConfig.bias;
+      _ethicsController.text = t.aiConfig.ethics;
+      _clickbaitThreshold = t.aiConfig.clickbaitThreshold.toDouble();
+      _selectedEmoji = t.iconEmoji;
+    }
+  }
+
+  @override
   void dispose() {
     _nameController.dispose();
     _descController.dispose();
@@ -32,6 +49,7 @@ class _CreatePersonaDialogState extends State<CreatePersonaDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final isEditing = widget.editTarget != null;
     return Dialog(
       backgroundColor: AppColors.inkSurface,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
@@ -46,8 +64,10 @@ class _CreatePersonaDialogState extends State<CreatePersonaDialog> {
               // Header
               Row(
                 children: [
-                  Text('Create Persona',
-                      style: Theme.of(context).textTheme.displaySmall),
+                  Text(
+                    isEditing ? 'Personayı Düzenle' : 'Persona Oluştur',
+                    style: Theme.of(context).textTheme.displaySmall,
+                  ),
                   const Spacer(),
                   IconButton(
                     icon: const Icon(Icons.close, color: AppColors.textMuted),
@@ -58,7 +78,7 @@ class _CreatePersonaDialogState extends State<CreatePersonaDialog> {
               const SizedBox(height: 20),
 
               // Emoji picker
-              Text('Icon', style: Theme.of(context).textTheme.bodySmall),
+              Text('İkon', style: Theme.of(context).textTheme.bodySmall),
               const SizedBox(height: 8),
               Wrap(
                 spacing: 8,
@@ -88,24 +108,28 @@ class _CreatePersonaDialogState extends State<CreatePersonaDialog> {
               ),
               const SizedBox(height: 20),
 
-              _buildField(_nameController, 'Persona Name', 'e.g. Activist Blog'),
+              _buildField(_nameController, 'Persona Adı', 'ör. Aktivist Blog'),
               const SizedBox(height: 12),
-              _buildField(_descController, 'Description',
-                  'What drives this editor?', maxLines: 2),
+              _buildField(_descController, 'Açıklama',
+                  'Bu editörü öne çıkaran ne?', maxLines: 2),
               const SizedBox(height: 12),
-              _buildField(_biasController, 'Bias Description',
-                  'e.g. Left-leaning, pro-environment'),
+              _buildField(_biasController, 'Tarafçılık Açıklaması',
+                  'ör. Sol eğilimli, çevre dostu'),
               const SizedBox(height: 12),
-              _buildField(_ethicsController, 'Ethical Standards',
-                  'e.g. High – fact-checks everything'),
+              _buildField(_ethicsController, 'Etik Standartlar',
+                  'ör. Yüksek – her şeyi doğrular'),
               const SizedBox(height: 20),
 
               // Clickbait slider
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('Clickbait Threshold',
-                      style: Theme.of(context).textTheme.bodySmall),
+                  Expanded(
+                    child: Text(
+                      'Clickbait Eşiği (Örn: %100 her haberi tık tuzağı olarak görür, %0 hiçbirini görmez)',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ),
                   Text('${_clickbaitThreshold.round()}%',
                       style: Theme.of(context).textTheme.labelLarge?.copyWith(
                             color: AppColors.gold,
@@ -134,7 +158,7 @@ class _CreatePersonaDialogState extends State<CreatePersonaDialog> {
                 onPressed: _submit,
                 style: ElevatedButton.styleFrom(
                     minimumSize: const Size(double.infinity, 52)),
-                child: const Text('SAVE PERSONA'),
+                child: Text(isEditing ? 'DEĞİŞİKLIKLERİ KAYDET' : 'PERSONAYI KAYDET'),
               ),
             ],
           ),
@@ -173,7 +197,7 @@ class _CreatePersonaDialogState extends State<CreatePersonaDialog> {
         fillColor: AppColors.glassSurface,
       ),
       validator: (v) =>
-          (v == null || v.trim().isEmpty) ? 'This field is required' : null,
+          (v == null || v.trim().isEmpty) ? 'Bu alan zorunludur' : null,
     );
   }
 

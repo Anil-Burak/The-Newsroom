@@ -64,7 +64,7 @@ class AINewspaperService extends StateNotifier<AINewspaperState> {
   static const _defaultPersonas = [
     {
       'id': 'persona_public',
-      'name': 'Public Broadcaster',
+      'name': 'Kamu Yayıncısı',
       'bias':
           'Neutral, civic-minded, focuses on public interest and democratic accountability.',
       'ethics':
@@ -73,7 +73,7 @@ class AINewspaperService extends StateNotifier<AINewspaperState> {
     },
     {
       'id': 'persona_tabloid',
-      'name': 'Commercial Tabloid',
+      'name': 'Ticari Magazin',
       'bias':
           'Sensationalist. Heavily favors high emotional impact, celebrity gossip, crime, and scandal.',
       'ethics':
@@ -82,7 +82,7 @@ class AINewspaperService extends StateNotifier<AINewspaperState> {
     },
     {
       'id': 'persona_independent',
-      'name': 'Independent',
+      'name': 'Bağımsız',
       'bias':
           'Progressive, anti-establishment. Prioritizes underreported stories, activism, and systemic issues.',
       'ethics':

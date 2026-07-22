@@ -28,6 +28,7 @@ class _PersonaSelectionScreenState
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(personaSelectionProvider);
+    final selectedCount = state.selectedPersonas.length;
 
     return Scaffold(
       body: Container(
@@ -36,14 +37,14 @@ class _PersonaSelectionScreenState
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header
+              // ── Header ────────────────────────────────────────────────────
               Padding(
-                padding: const EdgeInsets.fromLTRB(24, 32, 24, 0),
+                padding: const EdgeInsets.fromLTRB(24, 28, 24, 0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Choose Your',
+                      'Yapılandır',
                       style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                             color: AppColors.gold,
                             letterSpacing: 2,
@@ -51,69 +52,81 @@ class _PersonaSelectionScreenState
                           ),
                     ),
                     Text(
-                      'Editor Persona',
+                      'Yapay Zeka Personaları',
                       style: Theme.of(context).textTheme.displayMedium,
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Your persona shapes what news is worthy of print.',
+                      'Haberleri kimin değerlendireceğini seçin. '
+                      '$kMinModelPersonas ile $kMaxModelPersonas arasında persona belirleyin.',
                       style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                    const SizedBox(height: 12),
+                    // Selection counter pill
+                    _SelectionCounter(
+                      selected: selectedCount,
+                      max: kMaxModelPersonas,
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 32),
+              const SizedBox(height: 20),
 
-              // Persona Cards
+              // ── Persona List ───────────────────────────────────────────────
               if (state.isLoading)
                 const Expanded(
                     child: Center(
-                        child: CircularProgressIndicator(
-                            color: AppColors.gold)))
+                        child: CircularProgressIndicator(color: AppColors.gold)))
               else
                 Expanded(
                   child: ListView.separated(
                     padding: const EdgeInsets.symmetric(horizontal: 24),
                     itemCount: state.personas.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 16),
+                    separatorBuilder: (_, _) => const SizedBox(height: 12),
                     itemBuilder: (context, index) {
                       final persona = state.personas[index];
-                      final isActive = state.activePersona?.id == persona.id;
+                      final isSelected =
+                          ref.read(personaSelectionProvider.notifier).isSelected(persona);
+                      final atMax = selectedCount >= kMaxModelPersonas;
                       return PersonaCard(
                         persona: persona,
-                        isActive: isActive,
+                        isActive: isSelected,
+                        isDisabled: !isSelected && atMax,
                         onTap: () => ref
                             .read(personaSelectionProvider.notifier)
-                            .selectPersona(persona),
-                        onLongPress: () => _showReplaceDialog(context, index),
+                            .togglePersona(persona),
+                        onLongPress: () =>
+                            _showPersonaActions(context, persona, index),
                       );
                     },
                   ),
                 ),
 
-              // Bottom actions
+              // ── Bottom Actions ─────────────────────────────────────────────
               Padding(
-                padding: const EdgeInsets.all(24),
+                padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
                 child: Column(
                   children: [
-                    // Create custom persona
-                    OutlinedButton.icon(
-                      onPressed: () => _showCreateDialog(context),
-                      icon: const Icon(Icons.add_rounded, color: AppColors.gold),
-                      label: const Text('Create Custom Persona'),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColors.gold,
-                        side: const BorderSide(color: AppColors.gold),
-                        minimumSize: const Size(double.infinity, 52),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                    // Add persona button (only when under max)
+                    if (state.personas.length < 10)
+                      OutlinedButton.icon(
+                        onPressed: () => _showCreateDialog(context),
+                        icon: const Icon(Icons.add_rounded,
+                            color: AppColors.gold),
+                        label: const Text('Özel Yapay Zeka Personası Ekle'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppColors.gold,
+                          side: const BorderSide(color: AppColors.gold),
+                          minimumSize: const Size(double.infinity, 48),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 16),
-                    // Start game
+                    const SizedBox(height: 12),
+                    // Start button
                     ElevatedButton(
-                      onPressed: state.activePersona != null
+                      onPressed: state.canProceed
                           ? () => context.go(AppConstants.routeGatekeeping)
                           : null,
                       style: ElevatedButton.styleFrom(
@@ -122,7 +135,7 @@ class _PersonaSelectionScreenState
                       child: const Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Text('START GATEKEEPING'),
+                          Text('HABERLERİ ELEMEK İÇİN BAŞLA'),
                           SizedBox(width: 8),
                           Icon(Icons.arrow_forward_rounded),
                         ],
@@ -138,20 +151,24 @@ class _PersonaSelectionScreenState
     );
   }
 
-  void _showCreateDialog(BuildContext context, {int? replaceIndex}) {
+  // ── Dialogs ─────────────────────────────────────────────────────────────────
+
+  void _showCreateDialog(BuildContext context, {Persona? editTarget}) {
     showDialog<Persona>(
       context: context,
-      builder: (_) => const CreatePersonaDialog(),
-    ).then((newPersona) {
-      if (newPersona != null) {
-        ref
-            .read(personaSelectionProvider.notifier)
-            .addOrReplaceCustomPersona(newPersona, replaceIndex: replaceIndex);
+      builder: (_) => CreatePersonaDialog(editTarget: editTarget),
+    ).then((result) {
+      if (result == null) return;
+      final notifier = ref.read(personaSelectionProvider.notifier);
+      if (editTarget != null) {
+        notifier.editPersona(result.copyWith(id: editTarget.id));
+      } else {
+        notifier.addCustomPersona(result);
       }
     });
   }
 
-  void _showReplaceDialog(BuildContext context, int index) {
+  void _showPersonaActions(BuildContext context, Persona persona, int index) {
     showModalBottomSheet(
       context: context,
       backgroundColor: AppColors.inkSurface,
@@ -159,26 +176,152 @@ class _PersonaSelectionScreenState
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (_) => Padding(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
         child: Column(
           mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Replace this persona?',
-                style: Theme.of(context).textTheme.titleLarge),
+            // Persona name header
+            Row(
+              children: [
+                Text(
+                  persona.iconEmoji,
+                  style: const TextStyle(fontSize: 28),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    persona.name,
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
+                ),
+              ],
+            ),
             const SizedBox(height: 16),
+            const Divider(color: AppColors.glassBorder),
+            const SizedBox(height: 8),
+            // Edit
             ListTile(
-              leading: const Icon(Icons.swap_horiz_rounded, color: AppColors.gold),
-              title: const Text('Replace with new custom persona',
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.edit_rounded, color: AppColors.gold),
+              title: const Text('Personayı düzenle',
                   style: TextStyle(color: AppColors.textPrimary)),
               onTap: () {
                 Navigator.pop(context);
-                _showCreateDialog(context, replaceIndex: index);
+                _showCreateDialog(context, editTarget: persona);
               },
             ),
-            const SizedBox(height: 8),
+            // Delete (disabled for default personas)
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: Icon(
+                Icons.delete_outline_rounded,
+                color: persona.isDefault
+                    ? AppColors.textMuted
+                    : AppColors.rejectRed,
+              ),
+              title: Text(
+                persona.isDefault
+                    ? 'Yerleşik persona silinemez'
+                    : 'Personayı sil',
+                style: TextStyle(
+                  color: persona.isDefault
+                      ? AppColors.textMuted
+                      : AppColors.rejectRed,
+                ),
+              ),
+              onTap: persona.isDefault
+                  ? null
+                  : () {
+                      Navigator.pop(context);
+                      _confirmDelete(context, persona);
+                    },
+            ),
           ],
         ),
       ),
+    );
+  }
+
+  void _confirmDelete(BuildContext context, Persona persona) {
+    showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        backgroundColor: AppColors.inkSurface,
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text('"${persona.name}" silinsin mi?',
+            style: Theme.of(context).textTheme.titleLarge),
+        content: Text(
+          'Bu persona kalıcı olarak kaldırılacak.',
+          style: Theme.of(context).textTheme.bodyMedium,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('İptal',
+                style: TextStyle(color: AppColors.textMuted)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Sil',
+                style: TextStyle(color: AppColors.rejectRed)),
+          ),
+        ],
+      ),
+    ).then((confirmed) {
+      if (confirmed == true) {
+        ref.read(personaSelectionProvider.notifier).deletePersona(persona);
+      }
+    });
+  }
+}
+
+// ── Selection Counter Widget ──────────────────────────────────────────────────
+class _SelectionCounter extends StatelessWidget {
+  final int selected;
+  final int max;
+  const _SelectionCounter({required this.selected, required this.max});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        ...List.generate(max, (i) {
+          final filled = i < selected;
+          return Padding(
+            padding: const EdgeInsets.only(right: 6),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 250),
+              curve: Curves.easeOutCubic,
+              width: 28,
+              height: 28,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color:
+                    filled ? AppColors.gold : AppColors.glassSurface,
+                border: Border.all(
+                  color: filled ? AppColors.gold : AppColors.glassBorder,
+                  width: 1.5,
+                ),
+              ),
+              child: filled
+                  ? const Icon(Icons.check_rounded,
+                      size: 14, color: AppColors.inkBlack)
+                  : null,
+            ),
+          );
+        }),
+        const SizedBox(width: 8),
+        Text(
+          '$selected / $max seçildi',
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: selected >= max
+                    ? AppColors.gold
+                    : AppColors.textMuted,
+              ),
+        ),
+      ],
     );
   }
 }

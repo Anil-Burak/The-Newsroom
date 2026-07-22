@@ -10,17 +10,17 @@ class NewsSwipeCard extends StatelessWidget {
 
   Color get _categoryColor {
     switch (news.category.toLowerCase()) {
-      case 'politics':
+      case 'siyaset':
         return const Color(0xFF4A90D9);
-      case 'crime':
+      case 'suç':
         return AppColors.rejectRed;
-      case 'celebrity':
+      case 'magazin':
         return const Color(0xFFE91E8C);
-      case 'economy':
+      case 'ekonomi':
         return const Color(0xFF2ECC71);
-      case 'science':
+      case 'bilim':
         return const Color(0xFF9B59B6);
-      case 'sports':
+      case 'spor':
         return const Color(0xFFFF9800);
       default:
         return AppColors.gold;
@@ -185,9 +185,9 @@ class _SensationalismBadge extends StatelessWidget {
   }
 
   String get _label {
-    if (score >= 75) return '🔥 HIGH';
-    if (score >= 45) return '⚡ MED';
-    return '✅ LOW';
+    if (score >= 75) return '🔥 YÜKSEK';
+    if (score >= 45) return '⚡ ORTA';
+    return '✅ DÜŞÜK';
   }
 
   @override

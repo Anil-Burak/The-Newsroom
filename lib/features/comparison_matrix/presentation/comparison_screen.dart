@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/constants/app_constants.dart';
 import '../../gatekeeping/application/gatekeeper_notifier.dart';
 import '../../gatekeeping/domain/news_item.dart';
 import '../../persona_selection/application/persona_selection_notifier.dart';
+import '../../persona_selection/domain/persona.dart';
 import '../../comparison_matrix/data/ai_newspaper_service.dart';
 
 class ComparisonScreen extends ConsumerStatefulWidget {
@@ -14,15 +17,10 @@ class ComparisonScreen extends ConsumerStatefulWidget {
 }
 
 class _ComparisonScreenState extends ConsumerState<ComparisonScreen>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   late TabController _tabController;
-  static const _tabLabels = ['YOU', 'BROADCASTER', 'TABLOID', 'INDEPENDENT'];
-
-  @override
-  void initState() {
-    super.initState();
-    _tabController = TabController(length: 4, vsync: this);
-  }
+  List<Persona> _selectedPersonas = [];
+  bool _initialized = false;
 
   @override
   void dispose() {
@@ -30,11 +28,30 @@ class _ComparisonScreenState extends ConsumerState<ComparisonScreen>
     super.dispose();
   }
 
+  void _initTabs(List<Persona> personas) {
+    _selectedPersonas = personas;
+    // 1 (SEN) + selected personas count
+    _tabController = TabController(length: 1 + personas.length, vsync: this);
+    _initialized = true;
+  }
+
   @override
   Widget build(BuildContext context) {
     final aiState = ref.watch(aiNewspaperServiceProvider);
     final gatekeeperState = ref.watch(gatekeeperProvider);
-    final persona = ref.watch(activePersonaProvider);
+    final selectedPersonas = ref.watch(personaSelectionProvider).selectedPersonas;
+    final persona = ref.watch(activePersonaProvider); // User's persona
+
+    // Initialize or rebuild tab controller if persona count changes
+    if (!_initialized || _selectedPersonas.length != selectedPersonas.length) {
+      if (_initialized) _tabController.dispose();
+      _initTabs(selectedPersonas);
+    }
+
+    final allTabs = [
+      const Tab(text: 'SEN'),
+      ...selectedPersonas.map((p) => Tab(text: p.name.toUpperCase())),
+    ];
 
     return Scaffold(
       body: Container(
@@ -47,23 +64,42 @@ class _ComparisonScreenState extends ConsumerState<ComparisonScreen>
                 padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
                 child: Row(
                   children: [
+                    // Back to home button
+                    GestureDetector(
+                      onTap: () => context.go(AppConstants.routePersonaSelection),
+                      child: Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: AppColors.glassSurface,
+                          border: Border.all(color: AppColors.glassBorder),
+                        ),
+                        child: const Icon(Icons.home_rounded,
+                            color: AppColors.gold, size: 18),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('The Comparison', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppColors.gold, letterSpacing: 1.5)),
-                        Text('Matrix', style: Theme.of(context).textTheme.displaySmall),
+                        Text('Karşılaştırma', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppColors.gold, letterSpacing: 1.5)),
+                        Text('Matrisi', style: Theme.of(context).textTheme.displaySmall),
                       ],
                     ),
                     const Spacer(),
-                    if (aiState.status == AIGenerationStatus.loading)
-                      const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: AppColors.gold,
-                        ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: AppColors.glassSurface,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: AppColors.glassBorder),
                       ),
+                      child: Text(
+                        '12 AUG 2026',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -85,7 +121,7 @@ class _ComparisonScreenState extends ConsumerState<ComparisonScreen>
                   unselectedLabelColor: AppColors.textMuted,
                   labelStyle: const TextStyle(
                       fontWeight: FontWeight.w700, fontSize: 11, letterSpacing: 0.8),
-                  tabs: _tabLabels.map((l) => Tab(text: l)).toList(),
+                  tabs: allTabs,
                   dividerColor: Colors.transparent,
                 ),
               ),
@@ -101,28 +137,14 @@ class _ComparisonScreenState extends ConsumerState<ComparisonScreen>
                       rejected: gatekeeperState.rejectedCards,
                       personaName: persona?.name ?? 'You',
                     ),
-                    // AI newspapers
-                    _AINewspaperTab(
-                      personaId: 'persona_public',
-                      personaLabel: 'Public Broadcaster',
-                      aiState: aiState,
-                      allNews: gatekeeperState.acceptedCards +
-                          gatekeeperState.rejectedCards,
-                    ),
-                    _AINewspaperTab(
-                      personaId: 'persona_tabloid',
-                      personaLabel: 'Commercial Tabloid',
-                      aiState: aiState,
-                      allNews: gatekeeperState.acceptedCards +
-                          gatekeeperState.rejectedCards,
-                    ),
-                    _AINewspaperTab(
-                      personaId: 'persona_independent',
-                      personaLabel: 'Independent',
-                      aiState: aiState,
-                      allNews: gatekeeperState.acceptedCards +
-                          gatekeeperState.rejectedCards,
-                    ),
+                    // AI newspapers dynamically generated
+                    ...selectedPersonas.map((p) => _AINewspaperTab(
+                          personaId: p.id,
+                          personaLabel: p.name,
+                          aiState: aiState,
+                          allNews: gatekeeperState.acceptedCards +
+                              gatekeeperState.rejectedCards,
+                        )),
                   ],
                 ),
               ),
@@ -153,18 +175,18 @@ class _PlayerNewspaperTab extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _SectionHeader(title: '📰 Published — $personaName'),
+          _SectionHeader(title: '📰 Yayınlanan — $personaName'),
           ...accepted.map((n) => _ArticleRow(
                 news: n,
                 status: 'published',
-                justification: 'Your editorial choice.',
+                justification: 'Sizin editörlük seçiminiz.',
               )),
           const SizedBox(height: 16),
-          _SectionHeader(title: '🗑️ Rejected'),
+          _SectionHeader(title: '🗑️ Reddedilen'),
           ...rejected.map((n) => _ArticleRow(
                 news: n,
                 status: 'rejected',
-                justification: 'You chose not to publish this story.',
+                justification: 'Bu haberi yayınlamama kararı verdiniz.',
               )),
         ],
       ),
@@ -195,7 +217,7 @@ class _AINewspaperTab extends StatelessWidget {
           children: [
             CircularProgressIndicator(color: AppColors.gold),
             SizedBox(height: 16),
-            Text('AI editors are reviewing...',
+            Text('Yapay zeka editörleri inceliyor...',
                 style: TextStyle(color: AppColors.textSecondary)),
           ],
         ),
@@ -204,7 +226,7 @@ class _AINewspaperTab extends StatelessWidget {
 
     if (aiState.status == AIGenerationStatus.error) {
       return Center(
-        child: Text('AI generation failed: ${aiState.error}',
+        child: Text('Yapay zeka oluşturma başarısız: ${aiState.error}',
             style: const TextStyle(color: AppColors.rejectRed)),
       );
     }
@@ -212,7 +234,7 @@ class _AINewspaperTab extends StatelessWidget {
     final newspaper = aiState.newspapers[personaId];
     if (newspaper == null) {
       return const Center(
-        child: Text('Awaiting AI results...',
+        child: Text('Yapay zeka sonuçları bekleniyor...',
             style: TextStyle(color: AppColors.textMuted)),
       );
     }
@@ -229,20 +251,20 @@ class _AINewspaperTab extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _SectionHeader(title: '📰 Published — $personaLabel'),
+          _SectionHeader(title: '📰 Yayınlanan — $personaLabel'),
           ...published.map((n) => _ArticleRow(
                 news: n,
                 status: 'published',
                 justification: newspaper.justifications[n.id] ??
-                    'No justification provided.',
+                    'Geçerlilik açıklaması bulunmuyor.',
               )),
           const SizedBox(height: 16),
-          _SectionHeader(title: '🗑️ Rejected by $personaLabel'),
+          _SectionHeader(title: '🗑️ $personaLabel tarafından reddedilen'),
           ...rejected.map((n) => _ArticleRow(
                 news: n,
                 status: 'rejected',
                 justification: newspaper.justifications[n.id] ??
-                    'No justification provided.',
+                    'Geçerlilik açıklaması bulunmuyor.',
               )),
         ],
       ),
@@ -354,7 +376,7 @@ class _ArticleRow extends StatelessWidget {
                 ),
               ),
               child: Text(
-                status == 'published' ? '✅ PUBLISHED' : '❌ REJECTED',
+                status == 'published' ? '✅ YAYIMLANDI' : '❌ REDDEDILDİ',
                 style: TextStyle(
                   color: status == 'published'
                       ? AppColors.publishGreen
@@ -373,7 +395,7 @@ class _ArticleRow extends StatelessWidget {
                 style: Theme.of(context).textTheme.bodyMedium,
                 maxLines: 3),
             const Divider(height: 28, color: AppColors.glassBorder),
-            Text('EDITOR\'S JUSTIFICATION',
+            Text('EDİTÖRÜN YORUMU',
                 style: Theme.of(context)
                     .textTheme
                     .bodySmall
