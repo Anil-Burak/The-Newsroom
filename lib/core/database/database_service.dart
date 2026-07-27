@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import 'seed_data.dart';
@@ -22,7 +23,7 @@ class DatabaseService {
 
     _db = await openDatabase(
       path,
-      version: 2,
+      version: 4,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -76,7 +77,11 @@ class DatabaseService {
     }
 
     for (final news in kSeedNewsPool) {
-      batch.insert('news_pool', news,
+      final newsMap = Map<String, dynamic>.from(news);
+      if (newsMap['tags'] is List) {
+        newsMap['tags'] = jsonEncode(newsMap['tags']);
+      }
+      batch.insert('news_pool', newsMap,
           conflictAlgorithm: ConflictAlgorithm.ignore);
     }
 

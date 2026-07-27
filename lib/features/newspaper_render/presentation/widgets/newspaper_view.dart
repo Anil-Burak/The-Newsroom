@@ -6,6 +6,7 @@ class NewspaperView extends StatelessWidget {
   final List<NewsItem> articles;
   final VoidCallback? onFullscreenTap;
   final VoidCallback? onCloseTap;
+  final bool isPlayer;
 
   const NewspaperView({
     super.key,
@@ -13,6 +14,7 @@ class NewspaperView extends StatelessWidget {
     required this.articles,
     this.onFullscreenTap,
     this.onCloseTap,
+    this.isPlayer = false,
   });
 
   @override
@@ -25,6 +27,7 @@ class NewspaperView extends StatelessWidget {
             personaName: personaName,
             onFullscreenTap: onFullscreenTap,
             onCloseTap: onCloseTap,
+            isPlayer: isPlayer,
           ),
           Expanded(
             child: LayoutBuilder(
@@ -74,12 +77,14 @@ class NewspaperMasthead extends StatelessWidget {
   final String personaName;
   final VoidCallback? onFullscreenTap;
   final VoidCallback? onCloseTap;
+  final bool isPlayer;
 
   const NewspaperMasthead({
     super.key,
     required this.personaName,
     this.onFullscreenTap,
     this.onCloseTap,
+    this.isPlayer = false,
   });
 
   @override
@@ -101,7 +106,9 @@ class NewspaperMasthead extends StatelessWidget {
                 Column(
                   children: [
                     Text(
-                      '${personaName.toUpperCase()} GAZETESİ',
+                      isPlayer
+                          ? 'SENİN GAZETEN'
+                          : '${personaName.toUpperCase()} GAZETESİ',
                       style: const TextStyle(
                         fontFamily: 'serif',
                         fontSize: 26,
@@ -441,12 +448,19 @@ class _HeroArticleCell extends StatelessWidget {
               flex: 3,
               child: SizedBox(
                 width: double.infinity,
-                child: Image.network(article.imageUrl, fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) => Container(
-                          color: const Color(0xFFDDD8CC),
-                          child: const Icon(Icons.article,
-                              size: 64, color: Color(0xFF888888)),
-                        )),
+                child: article.imageUrl.startsWith('http')
+                    ? Image.network(article.imageUrl, fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) => Container(
+                              color: const Color(0xFFDDD8CC),
+                              child: const Icon(Icons.article,
+                                  size: 64, color: Color(0xFF888888)),
+                            ))
+                    : Image.asset(article.imageUrl, fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) => Container(
+                              color: const Color(0xFFDDD8CC),
+                              child: const Icon(Icons.article,
+                                  size: 64, color: Color(0xFF888888)),
+                            )),
               ),
             ),
           Flexible(

@@ -48,26 +48,34 @@ class NewsSwipeCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Image
-            Expanded(
-              flex: 5,
+            AspectRatio(
+              aspectRatio: 1.0,
               child: Stack(
                 fit: StackFit.expand,
                 children: [
                   news.imageUrl.isNotEmpty
-                      ? CachedNetworkImage(
-                          imageUrl: news.imageUrl,
-                          fit: BoxFit.cover,
-                          placeholder: (_, __) => Container(
-                            color: AppColors.inkMid,
-                            child: const Center(
-                              child: CircularProgressIndicator(
-                                  color: AppColors.gold),
-                            ),
-                          ),
-                          errorWidget: (_, __, ___) => _PlaceholderImage(
-                              category: news.category,
-                              color: _categoryColor),
-                        )
+                      ? (news.imageUrl.startsWith('http')
+                          ? CachedNetworkImage(
+                              imageUrl: news.imageUrl,
+                              fit: BoxFit.cover,
+                              placeholder: (_, __) => Container(
+                                color: AppColors.inkMid,
+                                child: const Center(
+                                  child: CircularProgressIndicator(
+                                      color: AppColors.gold),
+                                ),
+                              ),
+                              errorWidget: (_, __, ___) => _PlaceholderImage(
+                                  category: news.category,
+                                  color: _categoryColor),
+                            )
+                          : Image.asset(
+                              news.imageUrl,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) => _PlaceholderImage(
+                                  category: news.category,
+                                  color: _categoryColor),
+                            ))
                       : _PlaceholderImage(
                           category: news.category, color: _categoryColor),
                   // Image overlay gradient
@@ -114,7 +122,6 @@ class NewsSwipeCard extends StatelessWidget {
             ),
             // Content
             Expanded(
-              flex: 4,
               child: Padding(
                 padding: const EdgeInsets.all(20),
                 child: Column(

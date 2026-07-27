@@ -188,6 +188,7 @@ class _PlayerNewspaperTab extends StatelessWidget {
       publishedArticles: accepted,
       rejectedArticles: rejected,
       justificationDefault: 'Sizin editörlük seçiminiz.',
+      isPlayer: true,
     );
   }
 }
@@ -265,6 +266,7 @@ class _TabViewWithToggle extends StatefulWidget {
   final Map<String, String>? justifications;
   final Set<String>? userAcceptedIds;
   final String justificationDefault;
+  final bool isPlayer;
 
   const _TabViewWithToggle({
     required this.personaName,
@@ -273,6 +275,7 @@ class _TabViewWithToggle extends StatefulWidget {
     this.justifications,
     this.userAcceptedIds,
     required this.justificationDefault,
+    this.isPlayer = false,
   });
 
   @override
@@ -293,6 +296,7 @@ class _TabViewWithToggleState extends State<_TabViewWithToggle> {
                   personaName: widget.personaName,
                   articles: widget.publishedArticles,
                   onCloseTap: () => Navigator.of(context).pop(),
+                  isPlayer: widget.isPlayer,
                 ),
               ),
               Container(
@@ -327,9 +331,13 @@ class _TabViewWithToggleState extends State<_TabViewWithToggle> {
           _NewspaperBanner(
             personaName: widget.personaName,
             onTap: () => _openFullscreen(context),
+            isPlayer: widget.isPlayer,
           ),
           const SizedBox(height: 16),
-          _SectionHeader(title: '📰 Yayınlanan — ${widget.personaName}'),
+          _SectionHeader(
+              title: widget.isPlayer
+                  ? '📰 Senin Yayınladıkların'
+                  : '📰 Yayınlanan — ${widget.personaName}'),
           ...widget.publishedArticles.map((n) => _ArticleRow(
                 news: n,
                 status: 'published',
@@ -343,7 +351,9 @@ class _TabViewWithToggleState extends State<_TabViewWithToggle> {
               )),
           const SizedBox(height: 16),
           _SectionHeader(
-              title: '🗑️ ${widget.personaName} tarafından reddedilen'),
+              title: widget.isPlayer
+                  ? '🗑️ Senin Reddediklerin'
+                  : '🗑️ ${widget.personaName} tarafından reddedilen'),
           ...widget.rejectedArticles.map((n) => _ArticleRow(
                 news: n,
                 status: 'rejected',
@@ -366,10 +376,12 @@ class _TabViewWithToggleState extends State<_TabViewWithToggle> {
 class _NewspaperBanner extends StatelessWidget {
   final String personaName;
   final VoidCallback onTap;
+  final bool isPlayer;
 
   const _NewspaperBanner({
     required this.personaName,
     required this.onTap,
+    this.isPlayer = false,
   });
 
   @override
@@ -416,7 +428,9 @@ class _NewspaperBanner extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        '${personaName.toUpperCase()} GAZETESİNİ OKU',
+                        isPlayer
+                            ? 'SENİN GAZETENİ OKU'
+                            : '${personaName.toUpperCase()} GAZETESİNİ OKU',
                         style: const TextStyle(
                           color: AppColors.gold,
                           fontWeight: FontWeight.w900,

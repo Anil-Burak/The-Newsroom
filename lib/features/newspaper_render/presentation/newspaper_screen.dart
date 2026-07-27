@@ -79,8 +79,9 @@ class NewspaperScreen extends ConsumerWidget {
         body: SafeArea(
           bottom: false, // bottom handled by bottomNavigationBar padding
           child: NewspaperView(
-            personaName: persona?.name ?? 'The Daily',
+            personaName: persona?.name ?? 'Senin Gazeten',
             articles: accepted,
+            isPlayer: true,
           ),
         ),
       ),

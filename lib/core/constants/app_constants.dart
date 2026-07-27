@@ -4,7 +4,7 @@ class AppConstants {
   // Gatekeeping rules
   static const int minPublishedArticles = 3;
   static const int maxPublishedArticles = 6;
-  static const int totalNewsPoolSize = 30;
+  static const int totalNewsPoolSize = 15;
 
   // Layout template thresholds
   static const int template1Count = 3;

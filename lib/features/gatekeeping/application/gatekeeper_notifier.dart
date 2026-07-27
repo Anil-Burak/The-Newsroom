@@ -65,13 +65,16 @@ class GatekeeperNotifier extends StateNotifier<GatekeeperState> {
     try {
       final items = await _newsRepository.fetchNewsPool();
       
-      // Haberleri karıştır ama arkadaki ilk 2 haberin sabit kalması için 
-      // sırayı tamamen bozmak yerine rastgele bir dizilişle başlayalım.
-      // Firebase'den geldiğinde zaten belirli bir sırada olabilir.
-      items.shuffle(); // Tüm desteyi başta bir kez karıştır
-      
+      // Tüm havuzdan rastgele karıştırıp her oyun/geçit için AppConstants.totalNewsPoolSize (15) kadar alalım
+      items.shuffle();
+      final pool = items.take(AppConstants.totalNewsPoolSize).toList();
+
       state = state.copyWith(
-        upcomingCards: items,
+        upcomingCards: pool,
+        currentIndex: 0,
+        acceptedCards: const [],
+        rejectedCards: const [],
+        aiTriggered: false,
         status: SwipePhaseStatus.ready,
       );
     } catch (e) {
@@ -92,12 +95,15 @@ class GatekeeperNotifier extends StateNotifier<GatekeeperState> {
     }
 
     final newAccepted = [...state.acceptedCards, card];
+    final newIndex = state.currentIndex + 1;
     final newStatus = newAccepted.length >= AppConstants.maxPublishedArticles
         ? SwipePhaseStatus.fullCapacity
-        : SwipePhaseStatus.ready;
+        : (newIndex >= state.upcomingCards.length
+            ? SwipePhaseStatus.finished
+            : SwipePhaseStatus.ready);
 
     state = state.copyWith(
-      currentIndex: state.currentIndex + 1,
+      currentIndex: newIndex,
       acceptedCards: newAccepted,
       status: newStatus,
     );
@@ -128,6 +134,21 @@ class GatekeeperNotifier extends StateNotifier<GatekeeperState> {
     final newUpcoming = List<NewsItem>.from(state.upcomingCards);
     newUpcoming.insert(state.currentIndex, card);
     
+    state = state.copyWith(
+      upcomingCards: newUpcoming,
+      rejectedCards: newRejected,
+      status: SwipePhaseStatus.ready,
+    );
+  }
+
+  /// Rescue multiple rejected cards back into the upcoming deck.
+  void rescueMultipleRejectedCards(List<NewsItem> cards) {
+    if (cards.isEmpty) return;
+    final rescuedIds = cards.map((c) => c.id).toSet();
+    final newRejected = state.rejectedCards.where((n) => !rescuedIds.contains(n.id)).toList();
+    final newUpcoming = List<NewsItem>.from(state.upcomingCards);
+    newUpcoming.insertAll(state.currentIndex, cards);
+
     state = state.copyWith(
       upcomingCards: newUpcoming,
       rejectedCards: newRejected,

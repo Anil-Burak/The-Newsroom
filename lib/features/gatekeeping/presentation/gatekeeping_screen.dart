@@ -84,12 +84,12 @@ class _GatekeepingScreenState extends ConsumerState<GatekeepingScreen> {
     final newState = ref.read(gatekeeperProvider);
     if (newState.status == SwipePhaseStatus.fullCapacity) {
       Future.delayed(const Duration(milliseconds: 400), _showCapacityFullModal);
-    } else if (newState.status == SwipePhaseStatus.finished &&
+    } else if ((newState.status == SwipePhaseStatus.finished || newState.deckIsEmpty) &&
         newState.isAtMinimum) {
       Future.delayed(
           const Duration(milliseconds: 300),
           () => context.go(AppConstants.routeNewspaper));
-    } else if (newState.status == SwipePhaseStatus.finished &&
+    } else if ((newState.status == SwipePhaseStatus.finished || newState.deckIsEmpty) &&
         !newState.isAtMinimum) {
       Future.delayed(
           const Duration(milliseconds: 300), _showNeedMoreArticlesModal);
@@ -136,7 +136,6 @@ class _GatekeepingScreenState extends ConsumerState<GatekeepingScreen> {
   }
 
   void _showRejectedPile() {
-    final rejected = ref.read(gatekeeperProvider).rejectedCards;
     showModalBottomSheet(
       context: context,
       backgroundColor: AppColors.inkSurface,
@@ -144,58 +143,7 @@ class _GatekeepingScreenState extends ConsumerState<GatekeepingScreen> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (_) => DraggableScrollableSheet(
-        expand: false,
-        initialChildSize: 0.6,
-        builder: (_, scrollController) => Column(
-          children: [
-            const SizedBox(height: 12),
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: AppColors.textMuted,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(20),
-              child: Text('Reddedilen Haberler',
-                  style: Theme.of(context).textTheme.displaySmall),
-            ),
-            Expanded(
-              child: ListView.separated(
-                controller: scrollController,
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                itemCount: rejected.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 12),
-                itemBuilder: (context, i) {
-                  final item = rejected[i];
-                  return ListTile(
-                    tileColor: AppColors.glassSurface,
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12)),
-                    title: Text(item.headline,
-                        style: Theme.of(context).textTheme.titleLarge,
-                        maxLines: 2),
-                    subtitle:
-                        Text(item.category, style: Theme.of(context).textTheme.bodySmall),
-                    trailing: IconButton(
-                      icon: const Icon(Icons.undo_rounded, color: AppColors.gold),
-                      onPressed: () {
-                        ref
-                            .read(gatekeeperProvider.notifier)
-                            .rescueRejectedCard(item);
-                        Navigator.pop(context);
-                      },
-                    ),
-                  );
-                },
-              ),
-            ),
-          ],
-        ),
-      ),
+      builder: (_) => const _RejectedPileSheet(),
     );
   }
 
@@ -225,7 +173,7 @@ class _GatekeepingScreenState extends ConsumerState<GatekeepingScreen> {
                               .bodySmall
                               ?.copyWith(color: AppColors.gold, letterSpacing: 1.5),
                         ),
-                        Text('Haber Odası',
+                        Text('Haber Geçidi',
                             style: Theme.of(context).textTheme.headlineSmall),
                       ],
                     ),
@@ -411,6 +359,216 @@ class _GatekeeperModal extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _RejectedPileSheet extends ConsumerStatefulWidget {
+  const _RejectedPileSheet();
+
+  @override
+  ConsumerState<_RejectedPileSheet> createState() => _RejectedPileSheetState();
+}
+
+class _RejectedPileSheetState extends ConsumerState<_RejectedPileSheet> {
+  final Set<String> _selectedIds = {};
+
+  @override
+  Widget build(BuildContext context) {
+    final rejected = ref.watch(gatekeeperProvider).rejectedCards;
+
+    return DraggableScrollableSheet(
+      expand: false,
+      initialChildSize: 0.7,
+      maxChildSize: 0.9,
+      minChildSize: 0.4,
+      builder: (_, scrollController) => Column(
+        children: [
+          const SizedBox(height: 12),
+          Container(
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: AppColors.textMuted,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 10),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text('Reddedilen Haberler',
+                    style: Theme.of(context).textTheme.headlineSmall),
+                if (rejected.isNotEmpty)
+                  TextButton(
+                    onPressed: () {
+                      setState(() {
+                        if (_selectedIds.length == rejected.length) {
+                          _selectedIds.clear();
+                        } else {
+                          _selectedIds.addAll(rejected.map((e) => e.id));
+                        }
+                      });
+                    },
+                    child: Text(
+                      _selectedIds.length == rejected.length
+                          ? 'Tümünü Kaldır'
+                          : 'Tümünü Seç',
+                      style: const TextStyle(
+                          color: AppColors.gold, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 20),
+            child: Text(
+              'Tekrar değerlendirmek istediğiniz haberleri seçin ve "Tamam"a basın.',
+              style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Expanded(
+            child: rejected.isEmpty
+                ? const Center(
+                    child: Text(
+                      'Reddedilen haber bulunmuyor.',
+                      style: TextStyle(color: AppColors.textMuted),
+                    ),
+                  )
+                : ListView.separated(
+                    controller: scrollController,
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    itemCount: rejected.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 12),
+                    itemBuilder: (context, i) {
+                      final item = rejected[i];
+                      final isSelected = _selectedIds.contains(item.id);
+                      return Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(12),
+                          onTap: () {
+                            setState(() {
+                              if (isSelected) {
+                                _selectedIds.remove(item.id);
+                              } else {
+                                _selectedIds.add(item.id);
+                              }
+                            });
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: isSelected
+                                  ? AppColors.gold.withValues(alpha: 0.15)
+                                  : AppColors.glassSurface,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: isSelected
+                                    ? AppColors.gold
+                                    : AppColors.glassBorder,
+                                width: isSelected ? 1.5 : 1.0,
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                Checkbox(
+                                  value: isSelected,
+                                  activeColor: AppColors.gold,
+                                  checkColor: AppColors.inkSurface,
+                                  onChanged: (val) {
+                                    setState(() {
+                                      if (val == true) {
+                                        _selectedIds.add(item.id);
+                                      } else {
+                                        _selectedIds.remove(item.id);
+                                      }
+                                    });
+                                  },
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        item.headline,
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .titleMedium
+                                            ?.copyWith(
+                                              fontWeight: isSelected
+                                                  ? FontWeight.bold
+                                                  : FontWeight.normal,
+                                              color: isSelected
+                                                  ? AppColors.gold
+                                                  : Colors.white,
+                                            ),
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        item.category.toUpperCase(),
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodySmall
+                                            ?.copyWith(
+                                              color: AppColors.textSecondary,
+                                              fontSize: 11,
+                                            ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+          ),
+          Container(
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+            decoration: const BoxDecoration(
+              color: AppColors.inkSurface,
+              border: Border(top: BorderSide(color: AppColors.glassBorder)),
+            ),
+            child: ElevatedButton(
+              onPressed: _selectedIds.isEmpty
+                  ? null
+                  : () {
+                      final selectedItems = rejected
+                          .where((item) => _selectedIds.contains(item.id))
+                          .toList();
+                      ref
+                          .read(gatekeeperProvider.notifier)
+                          .rescueMultipleRejectedCards(selectedItems);
+                      Navigator.pop(context);
+                    },
+              style: ElevatedButton.styleFrom(
+                minimumSize: const Size(double.infinity, 50),
+                backgroundColor: AppColors.gold,
+                foregroundColor: AppColors.inkSurface,
+                disabledBackgroundColor: AppColors.inkMid,
+                disabledForegroundColor: AppColors.textMuted,
+              ),
+              child: Text(
+                _selectedIds.isEmpty
+                    ? 'TAMAM'
+                    : 'TAMAM (${_selectedIds.length} HABERİ KURTAR)',
+                style:
+                    const TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -87,7 +87,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                   const SizedBox(height: 28),
                   // Title
                   Text(
-                    'THE\nNEWSROOM',
+                    'HABER\nGEÇİDİ',
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.displayLarge?.copyWith(
                           fontSize: 40,
