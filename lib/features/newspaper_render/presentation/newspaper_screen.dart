@@ -9,11 +9,48 @@ import '../../persona_selection/application/persona_selection_notifier.dart';
 import '../../comparison_matrix/data/ai_newspaper_service.dart';
 import 'widgets/newspaper_view.dart';
 
-class NewspaperScreen extends ConsumerWidget {
+class NewspaperScreen extends ConsumerStatefulWidget {
   const NewspaperScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<NewspaperScreen> createState() => _NewspaperScreenState();
+}
+
+class _NewspaperScreenState extends ConsumerState<NewspaperScreen>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _animController;
+  late final Animation<double> _fadeAnimation;
+  late final Animation<Offset> _slideAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _animController = AnimationController(
+      duration: const Duration(milliseconds: 900),
+      vsync: this,
+    );
+    _fadeAnimation = CurvedAnimation(
+      parent: _animController,
+      curve: Curves.easeOut,
+    );
+    _slideAnimation = Tween<Offset>(
+      begin: const Offset(0, 0.04),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(
+      parent: _animController,
+      curve: Curves.easeOutCubic,
+    ));
+    _animController.forward();
+  }
+
+  @override
+  void dispose() {
+    _animController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final state = ref.watch(gatekeeperProvider);
     final persona = ref.watch(activePersonaProvider);
     final accepted = state.acceptedCards;
@@ -78,10 +115,16 @@ class NewspaperScreen extends ConsumerWidget {
         ),
         body: SafeArea(
           bottom: false, // bottom handled by bottomNavigationBar padding
-          child: NewspaperView(
-            personaName: persona?.name ?? 'Senin Gazeten',
-            articles: accepted,
-            isPlayer: true,
+          child: FadeTransition(
+            opacity: _fadeAnimation,
+            child: SlideTransition(
+              position: _slideAnimation,
+              child: NewspaperView(
+                personaName: persona?.name ?? 'Senin Gazeten',
+                articles: accepted,
+                isPlayer: true,
+              ),
+            ),
           ),
         ),
       ),
