@@ -99,6 +99,7 @@ class _GatekeepingScreenState extends ConsumerState<GatekeepingScreen> {
   void _showCapacityFullModal() {
     showDialog(
       context: context,
+      barrierDismissible: false,
       builder: (_) => _GatekeeperModal(
         icon: Icons.newspaper_rounded,
         iconColor: AppColors.gold,
@@ -372,40 +373,43 @@ class _GatekeeperModal extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Dialog(
-      backgroundColor: AppColors.inkSurface,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      child: Padding(
-        padding: const EdgeInsets.all(28),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 70,
-              height: 70,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: iconColor.withOpacity(0.15),
-                border: Border.all(color: iconColor, width: 2),
+    return PopScope(
+      canPop: false,
+      child: Dialog(
+        backgroundColor: AppColors.inkSurface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        child: Padding(
+          padding: const EdgeInsets.all(28),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 70,
+                height: 70,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: iconColor.withOpacity(0.15),
+                  border: Border.all(color: iconColor, width: 2),
+                ),
+                child: Icon(icon, color: iconColor, size: 36),
               ),
-              child: Icon(icon, color: iconColor, size: 36),
-            ),
-            const SizedBox(height: 20),
-            Text(title,
-                style: Theme.of(context).textTheme.displaySmall,
-                textAlign: TextAlign.center),
-            const SizedBox(height: 12),
-            Text(subtitle,
-                style: Theme.of(context).textTheme.bodyMedium,
-                textAlign: TextAlign.center),
-            const SizedBox(height: 28),
-            ElevatedButton(
-              onPressed: onAction,
-              style: ElevatedButton.styleFrom(
-                  minimumSize: const Size(double.infinity, 52)),
-              child: Text(actionLabel),
-            ),
-          ],
+              const SizedBox(height: 20),
+              Text(title,
+                  style: Theme.of(context).textTheme.displaySmall,
+                  textAlign: TextAlign.center),
+              const SizedBox(height: 12),
+              Text(subtitle,
+                  style: Theme.of(context).textTheme.bodyMedium,
+                  textAlign: TextAlign.center),
+              const SizedBox(height: 28),
+              ElevatedButton(
+                onPressed: onAction,
+                style: ElevatedButton.styleFrom(
+                    minimumSize: const Size(double.infinity, 52)),
+                child: Text(actionLabel),
+              ),
+            ],
+          ),
         ),
       ),
     );

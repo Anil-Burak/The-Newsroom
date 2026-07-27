@@ -1,6 +1,5 @@
 import 'dart:io';
 import 'dart:convert';
-import 'package:http/http.dart' as http;
 import 'package:http/io_client.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../gatekeeping/domain/news_item.dart';

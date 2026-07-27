@@ -143,11 +143,13 @@ class GatekeeperNotifier extends StateNotifier<GatekeeperState> {
   /// Manually confirm the selection when deck is not empty but constraints are met.
   void confirmSelection() {
     if (state.isAtMinimum) {
-      // Move remaining upcoming to rejected
-      final allRejected = [...state.rejectedCards, ...state.upcomingCards];
+      // Move only remaining (unprocessed) upcoming cards to rejected
+      final remaining = state.upcomingCards.sublist(state.currentIndex);
+      final allRejected = [...state.rejectedCards, ...remaining];
       state = state.copyWith(
         upcomingCards: [],
         rejectedCards: allRejected,
+        currentIndex: 0,
         status: SwipePhaseStatus.finished,
       );
     }

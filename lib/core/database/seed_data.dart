@@ -47,7 +47,6 @@ const List<Map<String, dynamic>> kSeedPersonas = [
 ];
 
 const List<Map<String, dynamic>> kSeedNewsPool = [
- [
   {
     "id": "news_001",
     "headline": "Yeni Oyun Motoru Piyasaya Sürüldü",
@@ -348,4 +347,4 @@ const List<Map<String, dynamic>> kSeedNewsPool = [
     "biasIndex": 0,
     "tags": ["sanat", "müzayede", "koleksiyon"]
   }
-]
+];

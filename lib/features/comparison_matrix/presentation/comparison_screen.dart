@@ -8,6 +8,7 @@ import '../../gatekeeping/domain/news_item.dart';
 import '../../persona_selection/application/persona_selection_notifier.dart';
 import '../../persona_selection/domain/persona.dart';
 import '../../comparison_matrix/data/ai_newspaper_service.dart';
+import '../../newspaper_render/presentation/widgets/newspaper_view.dart';
 
 class ComparisonScreen extends ConsumerStatefulWidget {
   const ComparisonScreen({super.key});
@@ -182,26 +183,11 @@ class _PlayerNewspaperTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _SectionHeader(title: '📰 Yayınlanan — $personaName'),
-          ...accepted.map((n) => _ArticleRow(
-                news: n,
-                status: 'published',
-                justification: 'Sizin editörlük seçiminiz.',
-              )),
-          const SizedBox(height: 16),
-          _SectionHeader(title: '🗑️ Reddedilen'),
-          ...rejected.map((n) => _ArticleRow(
-                news: n,
-                status: 'rejected',
-                justification: 'Bu haberi yayınlamama kararı verdiniz.',
-              )),
-        ],
-      ),
+    return _TabViewWithToggle(
+      personaName: personaName,
+      publishedArticles: accepted,
+      rejectedArticles: rejected,
+      justificationDefault: 'Sizin editörlük seçiminiz.',
     );
   }
 }
@@ -260,29 +246,203 @@ class _AINewspaperTab extends StatelessWidget {
         .where((n) => !newspaper.selectedNewsIds.contains(n.id))
         .toList();
 
+    return _TabViewWithToggle(
+      personaName: personaLabel,
+      publishedArticles: published,
+      rejectedArticles: rejected,
+      justifications: newspaper.justifications,
+      userAcceptedIds: userAcceptedIds,
+      justificationDefault: 'Geçerlilik açıklaması bulunmuyor.',
+    );
+  }
+}
+
+// ─── Shared Tab View with Newspaper & List Switcher ──────────────────────────
+class _TabViewWithToggle extends StatefulWidget {
+  final String personaName;
+  final List<NewsItem> publishedArticles;
+  final List<NewsItem> rejectedArticles;
+  final Map<String, String>? justifications;
+  final Set<String>? userAcceptedIds;
+  final String justificationDefault;
+
+  const _TabViewWithToggle({
+    required this.personaName,
+    required this.publishedArticles,
+    required this.rejectedArticles,
+    this.justifications,
+    this.userAcceptedIds,
+    required this.justificationDefault,
+  });
+
+  @override
+  State<_TabViewWithToggle> createState() => _TabViewWithToggleState();
+}
+
+class _TabViewWithToggleState extends State<_TabViewWithToggle> {
+  void _openFullscreen(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (_) => Dialog.fullscreen(
+        backgroundColor: const Color(0xFFF5F0E8),
+        child: SafeArea(
+          child: Column(
+            children: [
+              Expanded(
+                child: NewspaperView(
+                  personaName: widget.personaName,
+                  articles: widget.publishedArticles,
+                  onCloseTap: () => Navigator.of(context).pop(),
+                ),
+              ),
+              Container(
+                color: const Color(0xFFF5F0E8),
+                padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
+                child: ElevatedButton.icon(
+                  onPressed: () => Navigator.of(context).pop(),
+                  style: ElevatedButton.styleFrom(
+                    minimumSize: const Size(double.infinity, 48),
+                    backgroundColor: const Color(0xFF1A1A2E),
+                    foregroundColor: const Color(0xFFE5A93C),
+                  ),
+                  icon: const Icon(Icons.close_rounded),
+                  label: const Text('KARŞILAŞTIRMAYA DÖN',
+                      style: TextStyle(fontWeight: FontWeight.w800)),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _SectionHeader(title: '📰 Yayınlanan — $personaLabel'),
-          ...published.map((n) => _ArticleRow(
+          _NewspaperBanner(
+            personaName: widget.personaName,
+            onTap: () => _openFullscreen(context),
+          ),
+          const SizedBox(height: 16),
+          _SectionHeader(title: '📰 Yayınlanan — ${widget.personaName}'),
+          ...widget.publishedArticles.map((n) => _ArticleRow(
                 news: n,
                 status: 'published',
-                justification: newspaper.justifications[n.id] ??
-                    'Geçerlilik açıklaması bulunmuyor.',
-                isUserAccepted: userAcceptedIds.contains(n.id),
+                justification: widget.justifications != null
+                    ? (widget.justifications![n.id] ??
+                        'Geçerlilik açıklaması bulunmuyor.')
+                    : widget.justificationDefault,
+                isUserAccepted: widget.userAcceptedIds != null
+                    ? widget.userAcceptedIds!.contains(n.id)
+                    : null,
               )),
           const SizedBox(height: 16),
-          _SectionHeader(title: '🗑️ $personaLabel tarafından reddedilen'),
-          ...rejected.map((n) => _ArticleRow(
+          _SectionHeader(
+              title: '🗑️ ${widget.personaName} tarafından reddedilen'),
+          ...widget.rejectedArticles.map((n) => _ArticleRow(
                 news: n,
                 status: 'rejected',
-                justification: newspaper.justifications[n.id] ??
-                    'Geçerlilik açıklaması bulunmuyor.',
-                isUserAccepted: userAcceptedIds.contains(n.id),
+                justification: widget.justifications != null
+                    ? (widget.justifications![n.id] ??
+                        'Geçerlilik açıklaması bulunmuyor.')
+                    : widget.justificationDefault,
+                isUserAccepted: widget.userAcceptedIds != null
+                    ? widget.userAcceptedIds!.contains(n.id)
+                    : null,
               )),
         ],
+      ),
+    );
+  }
+}
+
+
+
+class _NewspaperBanner extends StatelessWidget {
+  final String personaName;
+  final VoidCallback onTap;
+
+  const _NewspaperBanner({
+    required this.personaName,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF2A2A4E), Color(0xFF1A1A2E)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.gold, width: 1.2),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.gold.withValues(alpha: 0.12),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(14),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.all(14),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: AppColors.gold.withValues(alpha: 0.2),
+                    shape: BoxShape.circle,
+                    border: Border.all(color: AppColors.gold.withValues(alpha: 0.5)),
+                  ),
+                  child: const Icon(Icons.newspaper_rounded,
+                      color: AppColors.gold, size: 24),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '${personaName.toUpperCase()} GAZETESİNİ OKU',
+                        style: const TextStyle(
+                          color: AppColors.gold,
+                          fontWeight: FontWeight.w900,
+                          fontSize: 13,
+                          letterSpacing: 0.8,
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      const Text(
+                        'Seçilen manşetlerle oluşan gazete sayfasını tam ekran inceleyin.',
+                        style: TextStyle(
+                          color: AppColors.textSecondary,
+                          fontSize: 11,
+                          height: 1.3,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                const Icon(Icons.open_in_full_rounded,
+                    color: AppColors.gold, size: 16),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

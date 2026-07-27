@@ -132,13 +132,16 @@ class _PersonaSelectionScreenState
                       style: ElevatedButton.styleFrom(
                         minimumSize: const Size(double.infinity, 56),
                       ),
-                      child: const Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text('HABERLERİ ELEMEK İÇİN BAŞLA'),
-                          SizedBox(width: 8),
-                          Icon(Icons.arrow_forward_rounded),
-                        ],
+                      child: const FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text('HABERLERİ ELEMEK İÇİN BAŞLA'),
+                            SizedBox(width: 8),
+                            Icon(Icons.arrow_forward_rounded),
+                          ],
+                        ),
                       ),
                     ),
                   ],
