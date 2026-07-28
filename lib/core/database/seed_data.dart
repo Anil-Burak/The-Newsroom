@@ -20,7 +20,7 @@ const List<Map<String, dynamic>> kSeedPersonas = [
     'id': 'persona_tabloid',
     'name': 'Ticari Magazin',
     'description':
-        'Tıklanma, sansasyon ve dedikodu odaklı yayın anlayışı benimser.',
+        'Tıklanma, sansasyon ve dedikodu odaklı yayın anlayışı.',
     'iconEmoji': '🔥',
     'isDefault': 1,
     'sortOrder': 1,

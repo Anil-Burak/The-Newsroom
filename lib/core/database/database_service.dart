@@ -27,6 +27,14 @@ class DatabaseService {
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
+
+    // Varsayılan personaların güncellemelerinin (önceden kurulmuş veritabanlarında da) yansıması için:
+    final batch = _db!.batch();
+    for (final persona in kSeedPersonas) {
+      batch.insert('personas', persona,
+          conflictAlgorithm: ConflictAlgorithm.replace);
+    }
+    await batch.commit(noResult: true);
   }
 
   // ─── Schema ───────────────────────────────────────────────────────────────
@@ -73,7 +81,7 @@ class DatabaseService {
 
     for (final persona in kSeedPersonas) {
       batch.insert('personas', persona,
-          conflictAlgorithm: ConflictAlgorithm.ignore);
+          conflictAlgorithm: ConflictAlgorithm.replace);
     }
 
     for (final news in kSeedNewsPool) {
