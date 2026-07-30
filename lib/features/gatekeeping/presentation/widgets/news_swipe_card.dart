@@ -127,24 +127,20 @@ class NewsSwipeCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
-                      child: Text(
-                        news.headline,
-                        style: Theme.of(context).textTheme.headlineMedium,
-                        maxLines: 3,
-                        overflow: TextOverflow.ellipsis,
-                      ),
+                    Text(
+                      news.headline,
+                      style: Theme.of(context).textTheme.headlineMedium,
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 8),
-                    Expanded(
-                      child: Text(
-                        news.summary,
-                        style: Theme.of(context).textTheme.bodyMedium,
-                        maxLines: 3,
-                        overflow: TextOverflow.ellipsis,
-                      ),
+                    const SizedBox(height: 6),
+                    Text(
+                      news.summary,
+                      style: Theme.of(context).textTheme.bodyMedium,
+                      maxLines: 4,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 12),
+                    const Spacer(),
                     // Tags
                     Wrap(
                       spacing: 6,

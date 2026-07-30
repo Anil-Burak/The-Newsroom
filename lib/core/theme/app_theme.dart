@@ -63,7 +63,7 @@ class AppTypography {
           color: AppColors.textPrimary,
         ),
         headlineMedium: GoogleFonts.unna(
-          fontSize: 20,
+          fontSize: 24,
           fontWeight: FontWeight.w700,
           color: AppColors.textPrimary,
         ),
@@ -83,9 +83,9 @@ class AppTypography {
           height: 1.6,
         ),
         bodyMedium: GoogleFonts.inter(
-          fontSize: 13,
+          fontSize: 15,
           color: AppColors.textSecondary,
-          height: 1.5,
+          height: 1.45,
         ),
         bodySmall: GoogleFonts.inter(
           fontSize: 11,
