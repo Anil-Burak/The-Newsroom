@@ -23,7 +23,7 @@ class DatabaseService {
 
     _db = await openDatabase(
       path,
-      version: 4,
+      version: 6,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
