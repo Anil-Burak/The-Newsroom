@@ -198,45 +198,52 @@ class NewspaperMasthead extends StatelessWidget {
           Stack(
             alignment: Alignment.center,
             children: [
-              Column(
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        '✦  ',
-                        style: TextStyle(color: _inkColor, fontSize: 10),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 40),
+                child: Column(
+                  children: [
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            '✦  ',
+                            style: TextStyle(color: _inkColor, fontSize: 10),
+                          ),
+                          Text(
+                            isPlayer
+                                ? 'SENİN GAZETEN'
+                                : '${personaName.toUpperCase()} GAZETESİ',
+                            style: GoogleFonts.playfairDisplay(
+                              fontSize: 26,
+                              fontWeight: FontWeight.w900,
+                              color: _inkColor,
+                              letterSpacing: 3,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          Text(
+                            '  ✦',
+                            style: TextStyle(color: _inkColor, fontSize: 10),
+                          ),
+                        ],
                       ),
-                      Text(
-                        isPlayer
-                            ? 'SENİN GAZETEN'
-                            : '${personaName.toUpperCase()} GAZETESİ',
-                        style: GoogleFonts.playfairDisplay(
-                          fontSize: 26,
-                          fontWeight: FontWeight.w900,
-                          color: _inkColor,
-                          letterSpacing: 3,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                      Text(
-                        '  ✦',
-                        style: TextStyle(color: _inkColor, fontSize: 10),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 2),
-                  // Motto
-                  Text(
-                    '« Haber Sizin Elinizde »',
-                    style: GoogleFonts.lora(
-                      fontSize: 9,
-                      color: const Color(0xFF999999),
-                      fontStyle: FontStyle.italic,
-                      letterSpacing: 1.5,
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 2),
+                    // Motto
+                    Text(
+                      '« Haber Sizin Elinizde »',
+                      style: GoogleFonts.lora(
+                        fontSize: 9,
+                        color: const Color(0xFF999999),
+                        fontStyle: FontStyle.italic,
+                        letterSpacing: 1.5,
+                      ),
+                    ),
+                  ],
+                ),
               ),
               // Fullscreen / close buttons
               if (onFullscreenTap != null || onCloseTap != null)

@@ -48,8 +48,11 @@ class _GatekeepingScreenState extends ConsumerState<GatekeepingScreen> {
         ref.read(gatekeeperProvider).acceptedCards +
         ref.read(gatekeeperProvider).rejectedCards;
 
+    final selectedPersonas = ref.read(personaSelectionProvider).selectedPersonas;
+
     ref.read(aiNewspaperServiceProvider.notifier).generateAINewspapers(
           allNewsItems: newsPool,
+          personas: selectedPersonas,
         );
   }
 

@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:http/io_client.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../gatekeeping/domain/news_item.dart';
+import '../../persona_selection/domain/persona.dart';
 import '../../../core/constants/app_constants.dart';
 
 // ─── Model ───────────────────────────────────────────────────────────────────
@@ -62,37 +63,22 @@ class AINewspaperState {
 class AINewspaperService extends StateNotifier<AINewspaperState> {
   AINewspaperService() : super(const AINewspaperState());
 
-  static const _defaultPersonas = [
-    {
-      'id': 'persona_public',
-      'name': 'Kamu Yayıncısı',
-      'bias': 'Devletin bekasını, kamu düzenini ve toplum ahlakını ön planda tutar. Muhalif çatlak sesleri ve sansasyonel haberleri filtreler.',
-      'ethics': 'Resmi kaynaklara dayanmayan hiçbir habere yer vermez. Skandallardan ve magazinden nefret eder. Sıkıcı ama güvenilirdir.',
-      'clickbaitThreshold': 10,
-    },
-    {
-      'id': 'persona_tabloid',
-      'name': 'Ticari Magazin',
-      'bias': 'Sadece okunma sayısı, reklam geliri ve viral potansiyeli umrundadır. Şiddet, aldatma, ünlüler ve skandallar favorisidir.',
-      'ethics': 'Etik kuralları yok sayar. Doğrulanmamış dedikoduları bile tıklanma uğruna manşete taşır. Başlıkları aşırı abartılıdır.',
-      'clickbaitThreshold': 95,
-    },
-    {
-      'id': 'persona_independent',
-      'name': 'Bağımsız',
-      'bias': 'Sisteme ve büyük sermayeye karşı muhaliftir. İnsan hakları, çevre sorunları, yolsuzluk ve sansürlenmiş gerçeklerin peşindedir.',
-      'ethics': 'Editoryal bağımsızlığı her şeyden üstündür. Haberin kaynağı güvenilirse, hükümeti veya şirketleri kızdırmaktan çekinmez.',
-      'clickbaitThreshold': 30,
-    },
-  ];
-
   /// Calls OpenAI Chat Completions API directly to generate AI newspapers
-  /// for all 3 default personas. Results are cached in this notifier's state.
+  /// for the given [personas]. Results are cached in this notifier's state.
   Future<void> generateAINewspapers({
     required List<NewsItem> allNewsItems,
+    required List<Persona> personas,
   }) async {
     if (state.status == AIGenerationStatus.loading ||
         state.status == AIGenerationStatus.ready) {
+      return;
+    }
+
+    if (personas.isEmpty) {
+      state = state.copyWith(
+        status: AIGenerationStatus.error,
+        error: 'Karşılaştırma için seçili persona bulunamadı.',
+      );
       return;
     }
 
@@ -113,10 +99,38 @@ class AINewspaperService extends StateNotifier<AINewspaperState> {
             .toList(),
       );
 
-      final personasJson = jsonEncode(_defaultPersonas);
+      // Persona listesini dinamik olarak oluştur
+      final personasList = personas
+          .map((p) => {
+                'id': p.id,
+                'name': p.name,
+                'bias': p.aiConfig.bias,
+                'ethics': p.aiConfig.ethics,
+                'clickbaitThreshold': p.aiConfig.clickbaitThreshold,
+              })
+          .toList();
+      final personasJson = jsonEncode(personasList);
+      final personaCount = personas.length;
+      final personaIds = personas.map((p) => p.id).toList();
 
-      const systemPrompt = '''Sen "GateKeeper" adlı habercilik etiği ve yayın yönetmenliği oyununun simülasyon motorusun. 
-Görevin, sana verilen haber havuzundaki içerikleri 3 farklı editör (persona) gözünden incelemek ve yayınlanacak haberleri seçmektir.
+      // Dinamik JSON örneği oluştur (prompt'a gömülecek)
+      final exampleJson = StringBuffer('{\n');
+      for (int i = 0; i < personaIds.length; i++) {
+        final pid = personaIds[i];
+        exampleJson.writeln('  "$pid": {');
+        exampleJson.writeln('    "selected": ["news_id_1", "news_id_3"],');
+        exampleJson.writeln('    "justifications": {');
+        exampleJson.writeln('      "news_id_1": "Karakterin ağzından 1 cümlelik gerekçe",');
+        exampleJson.writeln('      "news_id_2": "Karakterin ağzından 1 cümlelik gerekçe"');
+        exampleJson.writeln('    }');
+        exampleJson.write('  }');
+        if (i < personaIds.length - 1) exampleJson.write(',');
+        exampleJson.writeln();
+      }
+      exampleJson.write('}');
+
+      final systemPrompt = '''Sen "GateKeeper" adlı habercilik etiği ve yayın yönetmenliği oyununun simülasyon motorusun. 
+Görevin, sana verilen haber havuzundaki içerikleri $personaCount farklı editör (persona) gözünden incelemek ve yayınlanacak haberleri seçmektir.
 
 SİSTEM KURALLARI:
 1. Her persona, kendi "bias" (taraf/ideoloji), "ethics" (etik anlayışı) ve "clickbaitThreshold" (tık tuzağı eşiği) değerlerine göre tamamen bağımsız seçimler yapmalıdır.
@@ -127,33 +141,18 @@ SİSTEM KURALLARI:
 ÇIKTI FORMATI:
 Hiçbir açıklama veya düşünce süreci (thinking process) belirtmeden SADECE aşağıdaki JSON formatında yanıt ver! 
 Markdown formatını kullanma, sadece doğrudan raw JSON çıktısı ver.
+JSON anahtarları olarak persona ID'lerini AYNEN kullan: ${personaIds.map((id) => '"$id"').join(', ')}
 
-{
-  "persona_public": {
-    "selected": ["news_id_1", "news_id_3", "news_id_5"],
-    "justifications": {
-      "news_id_1": "Karakterin ağzından 1 cümlelik gerekçe",
-      "news_id_2": "Karakterin ağzından 1 cümlelik gerekçe"
-    }
-  },
-  "persona_tabloid": {
-    "selected": ["news_id_2", "news_id_4", "news_id_6"],
-    "justifications": {
-      "news_id_1": "Karakterin ağzından 1 cümlelik gerekçe"
-    }
-  },
-  "persona_independent": {
-    "selected": ["news_id_7", "news_id_8", "news_id_9"],
-    "justifications": {
-      "news_id_1": "Karakterin ağzından 1 cümlelik gerekçe"
-    }
-  }
-}''';
+$exampleJson''';
 
       final userPrompt =
-          'NEWS POOL (${allNewsItems.length} items):\n$newsJson\n\nEDITOR PERSONAS (3 personas):\n$personasJson\n\n'
+          'NEWS POOL (${allNewsItems.length} items):\n$newsJson\n\nEDITOR PERSONAS ($personaCount personas):\n$personasJson\n\n'
           'CRITICAL INSTRUCTION: DO NOT WRITE A THINKING PROCESS! SKIP THE ANALYSIS! '
           'You MUST start your response immediately with a { character.';
+
+      // İlk persona ID'si ile assistant prefill oluştur
+      final firstPersonaId = personaIds.first;
+      final assistantPrefill = '{\n  "$firstPersonaId": {';
 
       // Sertifika doğrulama hatalarını atlamak için özel HTTP istemcisi (Bad Certificate Bypass)
       final ioClient = HttpClient()
@@ -171,7 +170,7 @@ Markdown formatını kullanma, sadece doğrudan raw JSON çıktısı ver.
           'messages': [
             {'role': 'system', 'content': systemPrompt},
             {'role': 'user', 'content': userPrompt},
-            {'role': 'assistant', 'content': '{\n  "persona_public": {'}
+            {'role': 'assistant', 'content': assistantPrefill}
           ],
           'temperature': 0.7,
           'max_tokens': 8192,
@@ -194,7 +193,7 @@ Markdown formatını kullanma, sadece doğrudan raw JSON çıktısı ver.
       // İçinde baştaki kısım yoksa (çoğu API eklemez), biz manuel eklemeliyiz.
       String content = rawContent;
       if (!content.trimLeft().startsWith('{')) {
-        content = '{\n  "persona_public": {' + content;
+        content = assistantPrefill + content;
       }
       
       // Temizlik aşaması: <think> veya Thinking Process gibi blokları ayıkla
@@ -224,9 +223,10 @@ Markdown formatını kullanma, sadece doğrudan raw JSON çıktısı ver.
       } catch (e) {
         // BULLETPROOF FALLBACK PARSER
         // Eğer JSON yarım kaldıysa (max_tokens bittiyse) veya bozuksa, RegExp ile kurtarabildiğimiz kadarını kurtarırız.
-        data = _bulletproofParse(rawContent);
+        data = _bulletproofParse(rawContent, personaIds);
         
-        if (data.isEmpty || (data['persona_public']['selected'] as List).isEmpty) {
+        if (data.isEmpty || !data.containsKey(personaIds.first) ||
+            (data[personaIds.first]['selected'] as List).isEmpty) {
           throw Exception('Kritik Hata: JSON yarım kaldı ve Bulletproof Parser da veri çıkaramadı.\nRaw Output:\n$rawContent');
         }
       }
@@ -252,11 +252,10 @@ Markdown formatını kullanma, sadece doğrudan raw JSON çıktısı ver.
   }
 
   /// JSON yapısı bozuk olsa bile Regex ile verileri ayıklayan kurtarıcı fonksiyon (Bulletproof Parser)
-  Map<String, dynamic> _bulletproofParse(String content) {
+  Map<String, dynamic> _bulletproofParse(String content, List<String> personaIds) {
     final Map<String, dynamic> data = {};
-    final personas = ['persona_public', 'persona_tabloid', 'persona_independent'];
 
-    for (final p in personas) {
+    for (final p in personaIds) {
       data[p] = {
         'selected': <String>[],
         'justifications': <String, dynamic>{}
@@ -266,7 +265,7 @@ Markdown formatını kullanma, sadece doğrudan raw JSON çıktısı ver.
       if (pIndex == -1) continue;
 
       int nextPIndex = content.length;
-      for (final otherP in personas) {
+      for (final otherP in personaIds) {
         if (otherP != p) {
           final idx = content.indexOf('"$otherP"', pIndex + 1);
           if (idx != -1 && idx < nextPIndex) {
