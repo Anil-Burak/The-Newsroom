@@ -6,7 +6,11 @@ import '../../../../core/theme/app_theme.dart';
 class CreatePersonaDialog extends StatefulWidget {
   /// If provided, the dialog opens in edit mode pre-filled with this persona.
   final Persona? editTarget;
-  const CreatePersonaDialog({super.key, this.editTarget});
+
+  /// If true, all fields are read-only (used for built-in personas).
+  final bool readOnly;
+
+  const CreatePersonaDialog({super.key, this.editTarget, this.readOnly = false});
 
   @override
   State<CreatePersonaDialog> createState() => _CreatePersonaDialogState();
@@ -50,6 +54,7 @@ class _CreatePersonaDialogState extends State<CreatePersonaDialog> {
   @override
   Widget build(BuildContext context) {
     final isEditing = widget.editTarget != null;
+    final isReadOnly = widget.readOnly;
     return Dialog(
       backgroundColor: AppColors.inkSurface,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
@@ -65,7 +70,9 @@ class _CreatePersonaDialogState extends State<CreatePersonaDialog> {
               Row(
                 children: [
                   Text(
-                    isEditing ? 'Personayı Düzenle' : 'Persona Oluştur',
+                    isReadOnly
+                        ? 'Persona Detayları'
+                        : (isEditing ? 'Personayı Düzenle' : 'Persona Oluştur'),
                     style: Theme.of(context).textTheme.displaySmall,
                   ),
                   const Spacer(),
@@ -85,14 +92,16 @@ class _CreatePersonaDialogState extends State<CreatePersonaDialog> {
                 children: _emojiOptions.map((e) {
                   final selected = e == _selectedEmoji;
                   return GestureDetector(
-                    onTap: () => setState(() => _selectedEmoji = e),
+                    onTap: isReadOnly
+                        ? null
+                        : () => setState(() => _selectedEmoji = e),
                     child: Container(
                       width: 44,
                       height: 44,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         color: selected
-                            ? AppColors.gold.withOpacity(0.2)
+                            ? AppColors.gold.withOpacity(0.1)
                             : AppColors.glassSurface,
                         border: Border.all(
                           color: selected
@@ -108,16 +117,20 @@ class _CreatePersonaDialogState extends State<CreatePersonaDialog> {
               ),
               const SizedBox(height: 20),
 
-              _buildField(_nameController, 'Persona Adı', 'ör. Aktivist Blog'),
+              _buildField(_nameController, 'Persona Adı', 'ör. Aktivist Blog',
+                  readOnly: isReadOnly),
               const SizedBox(height: 12),
               _buildField(_descController, 'Açıklama',
-                  'Bu editörü öne çıkaran ne?', maxLines: 2),
+                  'Bu editörü öne çıkaran ne?',
+                  maxLines: 2, readOnly: isReadOnly),
               const SizedBox(height: 12),
               _buildField(_biasController, 'Tarafçılık Açıklaması',
-                  'ör. Sol eğilimli, çevre dostu'),
+                  'ör. Sol eğilimli, çevre dostu',
+                  readOnly: isReadOnly),
               const SizedBox(height: 12),
               _buildField(_ethicsController, 'Etik Standartlar',
-                  'ör. Yüksek – her şeyi doğrular'),
+                  'ör. Yüksek – her şeyi doğrular',
+                  readOnly: isReadOnly),
               const SizedBox(height: 20),
 
               // Clickbait slider
@@ -141,25 +154,28 @@ class _CreatePersonaDialogState extends State<CreatePersonaDialog> {
                   activeTrackColor: AppColors.gold,
                   inactiveTrackColor: AppColors.glassSurface,
                   thumbColor: AppColors.gold,
-                  overlayColor: AppColors.gold.withOpacity(0.2),
+                  overlayColor: AppColors.gold.withOpacity(0.15),
                 ),
                 child: Slider(
                   value: _clickbaitThreshold,
                   min: 0,
                   max: 100,
                   divisions: 20,
-                  onChanged: (v) => setState(() => _clickbaitThreshold = v),
+                  onChanged: isReadOnly
+                      ? null
+                      : (v) => setState(() => _clickbaitThreshold = v),
                 ),
               ),
               const SizedBox(height: 24),
 
-              // Save button
-              ElevatedButton(
-                onPressed: _submit,
-                style: ElevatedButton.styleFrom(
-                    minimumSize: const Size(double.infinity, 52)),
-                child: Text(isEditing ? 'DEĞİŞİKLIKLERİ KAYDET' : 'PERSONAYI KAYDET'),
-              ),
+              // Save button (hidden for read-only built-in personas)
+              if (!isReadOnly)
+                ElevatedButton(
+                  onPressed: _submit,
+                  style: ElevatedButton.styleFrom(
+                      minimumSize: const Size(double.infinity, 52)),
+                  child: Text(isEditing ? 'DEĞİŞİKLIKLERİ KAYDET' : 'PERSONAYI KAYDET'),
+                ),
             ],
           ),
         ),
@@ -172,10 +188,12 @@ class _CreatePersonaDialogState extends State<CreatePersonaDialog> {
     String label,
     String hint, {
     int maxLines = 1,
+    bool readOnly = false,
   }) {
     return TextFormField(
       controller: controller,
       maxLines: maxLines,
+      readOnly: readOnly,
       style: Theme.of(context)
           .textTheme
           .bodyMedium
@@ -203,12 +221,13 @@ class _CreatePersonaDialogState extends State<CreatePersonaDialog> {
 
   void _submit() {
     if (_formKey.currentState!.validate()) {
+      final editTarget = widget.editTarget;
       final newPersona = Persona(
-        id: 'persona_custom_${const Uuid().v4()}',
+        id: editTarget?.id ?? 'persona_custom_${const Uuid().v4()}',
         name: _nameController.text.trim(),
         description: _descController.text.trim(),
         iconEmoji: _selectedEmoji,
-        isDefault: false,
+        isDefault: editTarget?.isDefault ?? false,
         aiConfig: PersonaAiConfig(
           bias: _biasController.text.trim(),
           ethics: _ethicsController.text.trim(),

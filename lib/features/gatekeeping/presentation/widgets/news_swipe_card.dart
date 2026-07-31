@@ -35,11 +35,12 @@ class NewsSwipeCard extends StatelessWidget {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(24),
           color: AppColors.inkSurface,
+          border: Border.all(color: AppColors.glassBorder, width: 1),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.5),
-              blurRadius: 24,
-              offset: const Offset(0, 8),
+              color: Colors.black.withOpacity(0.08),
+              blurRadius: 20,
+              offset: const Offset(0, 6),
             ),
           ],
         ),
@@ -59,7 +60,7 @@ class NewsSwipeCard extends StatelessWidget {
                               imageUrl: news.imageUrl,
                               fit: BoxFit.cover,
                               placeholder: (_, __) => Container(
-                                color: AppColors.inkMid,
+                                color: AppColors.glassSurface,
                                 child: const Center(
                                   child: CircularProgressIndicator(
                                       color: AppColors.gold),
@@ -153,8 +154,7 @@ class NewsSwipeCard extends StatelessWidget {
                                 decoration: BoxDecoration(
                                   color: AppColors.glassSurface,
                                   borderRadius: BorderRadius.circular(12),
-                                  border: const Border.fromBorderSide(
-                                      BorderSide(color: AppColors.glassBorder)),
+                                  border: Border.all(color: AppColors.glassBorder),
                                 ),
                                 child: Text(
                                   '#$tag',
@@ -218,16 +218,16 @@ class _PlaceholderImage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: color.withOpacity(0.15),
+      color: color.withOpacity(0.08),
       child: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.article_rounded, size: 64, color: color.withOpacity(0.5)),
+            Icon(Icons.article_rounded, size: 64, color: color.withOpacity(0.4)),
             const SizedBox(height: 8),
             Text(
               category,
-              style: TextStyle(color: color.withOpacity(0.7), fontSize: 14),
+              style: TextStyle(color: color.withOpacity(0.6), fontSize: 14),
             ),
           ],
         ),

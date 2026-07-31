@@ -157,7 +157,7 @@ class _GatekeepingScreenState extends ConsumerState<GatekeepingScreen> {
 
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(gradient: AppColors.inkGradient),
+        color: AppColors.inkDeep,
         child: SafeArea(
           child: Column(
             children: [
@@ -174,7 +174,7 @@ class _GatekeepingScreenState extends ConsumerState<GatekeepingScreen> {
                           style: Theme.of(context)
                               .textTheme
                               .bodySmall
-                              ?.copyWith(color: AppColors.gold, letterSpacing: 1.5),
+                              ?.copyWith(color: AppColors.textMuted, letterSpacing: 1.5),
                         ),
                         Text('Haber Geçidi',
                             style: Theme.of(context).textTheme.headlineSmall),
@@ -186,13 +186,14 @@ class _GatekeepingScreenState extends ConsumerState<GatekeepingScreen> {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 14, vertical: 8),
                       decoration: BoxDecoration(
-                        color: AppColors.glassSurface,
+                        color: AppColors.gold,
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: AppColors.glassBorder),
                       ),
                       child: Text(
                         '${state.upcomingCards.length - state.currentIndex} kaldı',
-                        style: Theme.of(context).textTheme.labelLarge,
+                        style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                              color: Colors.white,
+                            ),
                       ),
                     ),
                   ],
@@ -339,7 +340,7 @@ class _GatekeeperModal extends StatelessWidget {
                 height: 70,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: iconColor.withOpacity(0.15),
+                  color: iconColor.withOpacity(0.1),
                   border: Border.all(color: iconColor, width: 2),
                 ),
                 child: Icon(icon, color: iconColor, size: 36),
@@ -393,7 +394,7 @@ class _RejectedPileSheetState extends ConsumerState<_RejectedPileSheet> {
             width: 40,
             height: 4,
             decoration: BoxDecoration(
-              color: AppColors.textMuted,
+              color: AppColors.glassBorder,
               borderRadius: BorderRadius.circular(2),
             ),
           ),
@@ -467,7 +468,7 @@ class _RejectedPileSheetState extends ConsumerState<_RejectedPileSheet> {
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
                               color: isSelected
-                                  ? AppColors.gold.withValues(alpha: 0.15)
+                                  ? AppColors.gold.withValues(alpha: 0.08)
                                   : AppColors.glassSurface,
                               borderRadius: BorderRadius.circular(12),
                               border: Border.all(
@@ -482,7 +483,7 @@ class _RejectedPileSheetState extends ConsumerState<_RejectedPileSheet> {
                                 Checkbox(
                                   value: isSelected,
                                   activeColor: AppColors.gold,
-                                  checkColor: AppColors.inkSurface,
+                                  checkColor: Colors.white,
                                   onChanged: (val) {
                                     setState(() {
                                       if (val == true) {
@@ -510,7 +511,7 @@ class _RejectedPileSheetState extends ConsumerState<_RejectedPileSheet> {
                                                   : FontWeight.normal,
                                               color: isSelected
                                                   ? AppColors.gold
-                                                  : Colors.white,
+                                                  : AppColors.textPrimary,
                                             ),
                                         maxLines: 2,
                                         overflow: TextOverflow.ellipsis,
@@ -558,8 +559,8 @@ class _RejectedPileSheetState extends ConsumerState<_RejectedPileSheet> {
               style: ElevatedButton.styleFrom(
                 minimumSize: const Size(double.infinity, 50),
                 backgroundColor: AppColors.gold,
-                foregroundColor: AppColors.inkSurface,
-                disabledBackgroundColor: AppColors.inkMid,
+                foregroundColor: Colors.white,
+                disabledBackgroundColor: AppColors.glassSurface,
                 disabledForegroundColor: AppColors.textMuted,
               ),
               child: Text(

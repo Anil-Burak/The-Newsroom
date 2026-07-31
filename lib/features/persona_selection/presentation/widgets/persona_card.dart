@@ -34,23 +34,22 @@ class PersonaCard extends StatelessWidget {
             color: isActive ? AppColors.gold : AppColors.glassBorder,
             width: isActive ? 2.0 : 1.0,
           ),
-          gradient: isActive
-              ? const LinearGradient(
-                  colors: [Color(0xFF2A2415), Color(0xFF1F2B47)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                )
-              : null,
-          color: isActive ? null : AppColors.inkSurface,
+          color: AppColors.inkSurface,
           boxShadow: isActive
               ? [
                   BoxShadow(
-                    color: AppColors.gold.withOpacity(0.25),
-                    blurRadius: 20,
-                    spreadRadius: 2,
+                    color: AppColors.gold.withOpacity(0.12),
+                    blurRadius: 12,
+                    spreadRadius: 1,
                   )
                 ]
-              : null,
+              : [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.04),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  )
+                ],
         ),
         padding: const EdgeInsets.all(20),
         child: Row(
@@ -83,8 +82,9 @@ class PersonaCard extends StatelessWidget {
                         persona.name,
                         style: Theme.of(context).textTheme.titleLarge?.copyWith(
                               color: isActive
-                                  ? AppColors.gold
+                                  ? AppColors.inkBlack
                                   : AppColors.textPrimary,
+                              fontWeight: isActive ? FontWeight.w700 : FontWeight.w600,
                             ),
                       ),
                       if (!persona.isDefault) ...[
@@ -93,7 +93,7 @@ class PersonaCard extends StatelessWidget {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 8, vertical: 2),
                           decoration: BoxDecoration(
-                            color: AppColors.gold.withOpacity(0.2),
+                            color: AppColors.gold.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: const Text(
@@ -131,9 +131,7 @@ class PersonaCard extends StatelessWidget {
                             value: persona.aiConfig.clickbaitThreshold / 100,
                             backgroundColor: AppColors.glassSurface,
                             valueColor: AlwaysStoppedAnimation<Color>(
-                              isActive
-                                  ? AppColors.gold
-                                  : AppColors.textMuted,
+                              AppColors.gold,
                             ),
                             minHeight: 4,
                           ),
@@ -144,7 +142,7 @@ class PersonaCard extends StatelessWidget {
                         '${persona.aiConfig.clickbaitThreshold}%',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                               color: isActive
-                                  ? AppColors.goldLight
+                                  ? AppColors.gold
                                   : AppColors.textMuted,
                             ),
                       ),
@@ -169,7 +167,7 @@ class PersonaCard extends StatelessWidget {
               ),
               child: isActive
                   ? const Icon(Icons.check_rounded,
-                      size: 14, color: AppColors.inkBlack)
+                      size: 14, color: Colors.white)
                   : null,
             ),
           ],

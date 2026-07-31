@@ -100,8 +100,8 @@ class _NewspaperScreenState extends ConsumerState<NewspaperScreen>
             onPressed: () => context.go(AppConstants.routeComparison),
             style: ElevatedButton.styleFrom(
               minimumSize: const Size(double.infinity, 56),
-              backgroundColor: AppColors.inkDeep,
-              foregroundColor: AppColors.gold,
+              backgroundColor: AppColors.gold,
+              foregroundColor: Colors.white,
             ),
             child: const Row(
               mainAxisAlignment: MainAxisAlignment.center,

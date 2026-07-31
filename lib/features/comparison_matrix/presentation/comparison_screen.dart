@@ -60,7 +60,7 @@ class _ComparisonScreenState extends ConsumerState<ComparisonScreen>
 
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(gradient: AppColors.inkGradient),
+        color: AppColors.inkDeep,
         child: SafeArea(
           child: Column(
             children: [
@@ -85,14 +85,14 @@ class _ComparisonScreenState extends ConsumerState<ComparisonScreen>
                           border: Border.all(color: AppColors.glassBorder),
                         ),
                         child: const Icon(Icons.home_rounded,
-                            color: AppColors.gold, size: 18),
+                            color: AppColors.inkBlack, size: 18),
                       ),
                     ),
                     const SizedBox(width: 16),
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Karşılaştırma', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppColors.gold, letterSpacing: 1.5)),
+                        Text('Karşılaştırma', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppColors.textMuted, letterSpacing: 1.5)),
                         Text('Matrisi', style: Theme.of(context).textTheme.displaySmall),
                       ],
                     ),
@@ -106,7 +106,9 @@ class _ComparisonScreenState extends ConsumerState<ComparisonScreen>
                       ),
                       child: Text(
                         dateString,
-                        style: Theme.of(context).textTheme.bodySmall,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: AppColors.textPrimary,
+                            ),
                       ),
                     ),
                   ],
@@ -127,7 +129,7 @@ class _ComparisonScreenState extends ConsumerState<ComparisonScreen>
                     color: AppColors.gold,
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  labelColor: AppColors.inkBlack,
+                  labelColor: Colors.white,
                   unselectedLabelColor: AppColors.textMuted,
                   labelStyle: const TextStyle(
                       fontWeight: FontWeight.w700, fontSize: 11, letterSpacing: 0.8),
@@ -306,8 +308,8 @@ class _TabViewWithToggleState extends State<_TabViewWithToggle> {
                   onPressed: () => Navigator.of(context).pop(),
                   style: ElevatedButton.styleFrom(
                     minimumSize: const Size(double.infinity, 48),
-                    backgroundColor: const Color(0xFF1A1A2E),
-                    foregroundColor: const Color(0xFFE5A93C),
+                    backgroundColor: AppColors.gold,
+                    foregroundColor: Colors.white,
                   ),
                   icon: const Icon(Icons.close_rounded),
                   label: const Text('KARŞILAŞTIRMAYA DÖN',
@@ -388,18 +390,14 @@ class _NewspaperBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF2A2A4E), Color(0xFF1A1A2E)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        color: AppColors.inkSurface,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.gold, width: 1.2),
+        border: Border.all(color: AppColors.glassBorder, width: 1),
         boxShadow: [
           BoxShadow(
-            color: AppColors.gold.withValues(alpha: 0.12),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 8,
-            offset: const Offset(0, 3),
+            offset: const Offset(0, 2),
           ),
         ],
       ),
@@ -415,9 +413,9 @@ class _NewspaperBanner extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: AppColors.gold.withValues(alpha: 0.2),
+                    color: AppColors.gold.withValues(alpha: 0.1),
                     shape: BoxShape.circle,
-                    border: Border.all(color: AppColors.gold.withValues(alpha: 0.5)),
+                    border: Border.all(color: AppColors.gold.withValues(alpha: 0.3)),
                   ),
                   child: const Icon(Icons.newspaper_rounded,
                       color: AppColors.gold, size: 24),
@@ -432,7 +430,7 @@ class _NewspaperBanner extends StatelessWidget {
                             ? 'SENİN GAZETENİ OKU'
                             : '${personaName.toUpperCase()} GAZETESİNİ OKU',
                         style: const TextStyle(
-                          color: AppColors.gold,
+                          color: AppColors.inkBlack,
                           fontWeight: FontWeight.w900,
                           fontSize: 13,
                           letterSpacing: 0.8,
@@ -452,7 +450,7 @@ class _NewspaperBanner extends StatelessWidget {
                 ),
                 const SizedBox(width: 8),
                 const Icon(Icons.open_in_full_rounded,
-                    color: AppColors.gold, size: 16),
+                    color: AppColors.textMuted, size: 16),
               ],
             ),
           ),
@@ -472,7 +470,7 @@ class _SectionHeader extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 12),
       child: Text(title,
           style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                color: AppColors.gold,
+                color: AppColors.inkBlack,
                 letterSpacing: 1.2,
               )),
     );
@@ -501,12 +499,10 @@ class _ArticleRow extends StatelessWidget {
       child: Container(
         margin: const EdgeInsets.only(bottom: 10),
         decoration: BoxDecoration(
-          color: AppColors.glassSurface,
+          color: AppColors.inkSurface,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isPublished
-                ? AppColors.publishGreen.withOpacity(0.4)
-                : AppColors.rejectRed.withOpacity(0.3),
+            color: AppColors.glassBorder,
           ),
         ),
         child: ListTile(
@@ -517,8 +513,8 @@ class _ArticleRow extends StatelessWidget {
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: isPublished
-                  ? AppColors.publishGreen.withOpacity(0.15)
-                  : AppColors.rejectRed.withOpacity(0.15),
+                  ? AppColors.publishGreen.withOpacity(0.1)
+                  : AppColors.rejectRed.withOpacity(0.1),
             ),
             child: Icon(
               isPublished ? Icons.check_rounded : Icons.close_rounded,
@@ -534,7 +530,7 @@ class _ArticleRow extends StatelessWidget {
               style: const TextStyle(
                   color: AppColors.textSecondary, fontSize: 11)),
           trailing: isUserAccepted == null
-              ? const Icon(Icons.info_outline_rounded, color: AppColors.gold, size: 18)
+              ? const Icon(Icons.info_outline_rounded, color: AppColors.textMuted, size: 18)
               : Icon(
                   isUserAccepted! ? Icons.check_circle_rounded : Icons.cancel_rounded,
                   color: isUserAccepted! ? AppColors.publishGreen : AppColors.rejectRed,
@@ -565,7 +561,7 @@ class _ArticleRow extends StatelessWidget {
                 color: (status == 'published'
                         ? AppColors.publishGreen
                         : AppColors.rejectRed)
-                    .withOpacity(0.2),
+                    .withOpacity(0.1),
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
                   color: status == 'published'

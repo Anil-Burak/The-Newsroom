@@ -5,36 +5,36 @@ import 'package:google_fonts/google_fonts.dart';
 class AppColors {
   AppColors._();
 
-  // Primary ink palette
-  static const Color inkBlack = Color(0xFF0D0D0D);
-  static const Color inkDeep = Color(0xFF1A1A2E);
-  static const Color inkMid = Color(0xFF16213E);
-  static const Color inkSurface = Color(0xFF1F2B47);
+  // Primary surface palette (Light / Newspaper)
+  static const Color inkBlack = Color(0xFF1A1A1A);
+  static const Color inkDeep = Color(0xFFF9F9F9);      // Kırık Beyaz arka plan
+  static const Color inkMid = Color(0xFFF0F0F0);       // Açık Gri arka plan
+  static const Color inkSurface = Color(0xFFFFFFFF);    // Kart arka planı — Tam Beyaz
 
-  // Accent - Press-gold
-  static const Color gold = Color(0xFFD4A853);
-  static const Color goldLight = Color(0xFFEEC97D);
-  static const Color goldDark = Color(0xFFB8860B);
+  // Accent - Bayrak Kırmızısı
+  static const Color gold = Color(0xFFCC0000);          // Bayrak Kırmızısı (primary)
+  static const Color goldLight = Color(0xFFE53935);     // Açık Kırmızı
+  static const Color goldDark = Color(0xFF8B0000);      // Bordo
 
   // Semantic
   static const Color publishGreen = Color(0xFF2ECC71);
   static const Color rejectRed = Color(0xFFE74C3C);
   static const Color neutral = Color(0xFF95A5A6);
 
-  // Text
-  static const Color textPrimary = Color(0xFFF0EAD6); // Aged newsprint
-  static const Color textSecondary = Color(0xFFBDBDBD);
-  static const Color textMuted = Color(0xFF757575);
+  // Text (Koyu temelden açık arka plana uyumlu)
+  static const Color textPrimary = Color(0xFF1A1A1A);   // Koyu Füme
+  static const Color textSecondary = Color(0xFF555555);  // Orta Gri
+  static const Color textMuted = Color(0xFF999999);      // Açık Gri
 
-  // Glassmorphism surface
-  static const Color glassSurface = Color(0x1AFFFFFF);
-  static const Color glassBorder = Color(0x33FFFFFF);
+  // Surface tints (glassmorphism yerine solid açık yüzeyler)
+  static const Color glassSurface = Color(0xFFF5F5F5);  // Açık Gri Yüzey
+  static const Color glassBorder = Color(0xFFE0E0E0);   // İnce Gri Kenarlık
 
   // Gradients
   static const LinearGradient inkGradient = LinearGradient(
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-    colors: [inkDeep, inkMid, Color(0xFF0F3460)],
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+    colors: [Color(0xFFF9F9F9), Color(0xFFF0F0F0)],
   );
   static const LinearGradient goldGradient = LinearGradient(
     colors: [goldDark, gold, goldLight],
@@ -107,9 +107,9 @@ class AppTheme {
 
   static ThemeData get dark => ThemeData(
         useMaterial3: true,
-        brightness: Brightness.dark,
+        brightness: Brightness.light,
         scaffoldBackgroundColor: AppColors.inkDeep,
-        colorScheme: ColorScheme.dark(
+        colorScheme: ColorScheme.light(
           primary: AppColors.gold,
           secondary: AppColors.goldLight,
           surface: AppColors.inkSurface,
@@ -128,16 +128,17 @@ class AppTheme {
         ),
         cardTheme: CardThemeData(
           color: AppColors.inkSurface,
-          elevation: 8,
-          shadowColor: Colors.black54,
+          elevation: 2,
+          shadowColor: Colors.black12,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
+            side: const BorderSide(color: AppColors.glassBorder, width: 1),
           ),
         ),
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
             backgroundColor: AppColors.gold,
-            foregroundColor: AppColors.inkBlack,
+            foregroundColor: Colors.white,
             textStyle: GoogleFonts.inter(
               fontWeight: FontWeight.w700,
               letterSpacing: 1.1,
@@ -146,7 +147,7 @@ class AppTheme {
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
             ),
-            elevation: 4,
+            elevation: 2,
           ),
         ),
         dividerTheme: const DividerThemeData(color: AppColors.glassBorder),

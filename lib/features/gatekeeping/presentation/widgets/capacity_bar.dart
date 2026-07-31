@@ -26,12 +26,12 @@ class CapacityBar extends StatelessWidget {
               style: Theme.of(context)
                   .textTheme
                   .bodySmall
-                  ?.copyWith(letterSpacing: 1.5),
+                  ?.copyWith(letterSpacing: 1.5, color: AppColors.textMuted),
             ),
             Text(
               '$current / $max',
               style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                    color: current >= min ? AppColors.publishGreen : AppColors.gold,
+                    color: current >= min ? AppColors.publishGreen : AppColors.textPrimary,
                   ),
             ),
           ],
@@ -60,8 +60,8 @@ class CapacityBar extends StatelessWidget {
                     boxShadow: filled
                         ? [
                             BoxShadow(
-                              color: AppColors.publishGreen.withOpacity(0.4),
-                              blurRadius: 6,
+                              color: AppColors.publishGreen.withOpacity(0.3),
+                              blurRadius: 4,
                             )
                           ]
                         : null,

@@ -32,7 +32,7 @@ class _PersonaSelectionScreenState
 
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(gradient: AppColors.inkGradient),
+        color: AppColors.inkDeep,
         child: SafeArea(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -46,7 +46,7 @@ class _PersonaSelectionScreenState
                     Text(
                       'Yapılandır',
                       style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                            color: AppColors.gold,
+                            color: AppColors.textMuted,
                             letterSpacing: 2,
                             fontWeight: FontWeight.w600,
                           ),
@@ -131,6 +131,8 @@ class _PersonaSelectionScreenState
                           : null,
                       style: ElevatedButton.styleFrom(
                         minimumSize: const Size(double.infinity, 56),
+                        disabledBackgroundColor: AppColors.glassSurface,
+                        disabledForegroundColor: AppColors.textMuted,
                       ),
                       child: const FittedBox(
                         fit: BoxFit.scaleDown,
@@ -171,6 +173,16 @@ class _PersonaSelectionScreenState
     });
   }
 
+  void _showViewDialog(BuildContext context, Persona persona) {
+    showDialog(
+      context: context,
+      builder: (_) => CreatePersonaDialog(
+        editTarget: persona,
+        readOnly: true,
+      ),
+    );
+  }
+
   void _showPersonaActions(BuildContext context, Persona persona, int index) {
     showModalBottomSheet(
       context: context,
@@ -203,15 +215,28 @@ class _PersonaSelectionScreenState
             const SizedBox(height: 16),
             const Divider(color: AppColors.glassBorder),
             const SizedBox(height: 8),
-            // Edit
+            // Edit / View
             ListTile(
               contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.edit_rounded, color: AppColors.gold),
-              title: const Text('Personayı düzenle',
-                  style: TextStyle(color: AppColors.textPrimary)),
+              leading: Icon(
+                persona.isDefault
+                    ? Icons.visibility_rounded
+                    : Icons.edit_rounded,
+                color: AppColors.gold,
+              ),
+              title: Text(
+                persona.isDefault
+                    ? 'Persona detaylarını görüntüle'
+                    : 'Personayı düzenle',
+                style: const TextStyle(color: AppColors.textPrimary),
+              ),
               onTap: () {
                 Navigator.pop(context);
-                _showCreateDialog(context, editTarget: persona);
+                if (persona.isDefault) {
+                  _showViewDialog(context, persona);
+                } else {
+                  _showCreateDialog(context, editTarget: persona);
+                }
               },
             ),
             // Delete (disabled for default personas)
@@ -310,7 +335,7 @@ class _SelectionCounter extends StatelessWidget {
               ),
               child: filled
                   ? const Icon(Icons.check_rounded,
-                      size: 14, color: AppColors.inkBlack)
+                      size: 14, color: Colors.white)
                   : null,
             ),
           );

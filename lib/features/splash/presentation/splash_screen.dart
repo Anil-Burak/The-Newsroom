@@ -46,7 +46,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(gradient: AppColors.inkGradient),
+        color: AppColors.inkDeep,
         child: Center(
           child: FadeTransition(
             opacity: _fadeIn,
@@ -72,7 +72,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: AppColors.gold.withOpacity(0.4),
+                          color: AppColors.gold.withOpacity(0.3),
                           blurRadius: 30,
                           spreadRadius: 5,
                         ),
@@ -81,7 +81,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                     child: const Icon(
                       Icons.newspaper_rounded,
                       size: 52,
-                      color: AppColors.inkBlack,
+                      color: Colors.white,
                     ),
                   ),
                   const SizedBox(height: 28),
@@ -95,7 +95,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                           letterSpacing: 8,
                           foreground: Paint()
                             ..shader = const LinearGradient(
-                              colors: [AppColors.goldDark, AppColors.goldLight],
+                              colors: [AppColors.goldDark, AppColors.gold],
                             ).createShader(
                               const Rect.fromLTWH(0, 0, 300, 100),
                             ),
