@@ -24,8 +24,10 @@ dependencies:
   # ── Swipe Card Mechanics ──────────────────────────────────────────────────
   appinio_swiper: ^2.1.1
 
-  # ── Dynamic Newspaper Layouts ─────────────────────────────────────────────
+  # ── Dynamic Newspaper Layouts & PDF ───────────────────────────────────────
   flutter_staggered_grid_view: ^0.7.0
+  pdf: ^3.11.1
+  printing: ^5.12.0
 
   # ── Image & Network ───────────────────────────────────────────────────────
   cached_network_image: ^3.3.1

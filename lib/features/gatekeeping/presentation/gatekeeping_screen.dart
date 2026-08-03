@@ -153,12 +153,39 @@ class _GatekeepingScreenState extends ConsumerState<GatekeepingScreen> {
     );
   }
 
+  Future<bool> _showExitConfirmationDialog() async {
+    final result = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => _GatekeeperModal(
+        icon: Icons.exit_to_app_rounded,
+        iconColor: AppColors.gold,
+        title: 'Çıkış Yap',
+        subtitle: 'Haber kaydırma işlemini iptal edip ana ekrana dönmek istediğinize emin misiniz?',
+        actionLabel: 'EVET, ÇIK',
+        onAction: () => Navigator.pop(context, true),
+        secondaryActionLabel: 'HAYIR, DEVAM ET',
+        onSecondaryAction: () => Navigator.pop(context, false),
+      ),
+    );
+    return result ?? false;
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(gatekeeperProvider);
     final persona = ref.watch(activePersonaProvider);
 
-    return Scaffold(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+        final shouldExit = await _showExitConfirmationDialog();
+        if (shouldExit && context.mounted) {
+          context.go(AppConstants.routePersonaSelection);
+        }
+      },
+      child: Scaffold(
       body: Container(
         color: AppColors.inkDeep,
         child: SafeArea(
@@ -314,6 +341,7 @@ class _GatekeepingScreenState extends ConsumerState<GatekeepingScreen> {
           ),
         ),
       ),
+    ),
     );
   }
 }
@@ -353,6 +381,8 @@ class _GatekeeperModal extends StatelessWidget {
   final String subtitle;
   final String actionLabel;
   final VoidCallback onAction;
+  final String? secondaryActionLabel;
+  final VoidCallback? onSecondaryAction;
 
   const _GatekeeperModal({
     required this.icon,
@@ -361,6 +391,8 @@ class _GatekeeperModal extends StatelessWidget {
     required this.subtitle,
     required this.actionLabel,
     required this.onAction,
+    this.secondaryActionLabel,
+    this.onSecondaryAction,
   });
 
   @override
@@ -380,7 +412,7 @@ class _GatekeeperModal extends StatelessWidget {
                 height: 70,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: iconColor.withOpacity(0.1),
+                  color: iconColor.withValues(alpha: 0.1),
                   border: Border.all(color: iconColor, width: 2),
                 ),
                 child: Icon(icon, color: iconColor, size: 36),
@@ -394,6 +426,18 @@ class _GatekeeperModal extends StatelessWidget {
                   style: Theme.of(context).textTheme.bodyMedium,
                   textAlign: TextAlign.center),
               const SizedBox(height: 28),
+              if (secondaryActionLabel != null && onSecondaryAction != null) ...[
+                OutlinedButton(
+                  onPressed: onSecondaryAction,
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: const Size(double.infinity, 52),
+                    foregroundColor: AppColors.textPrimary,
+                    side: const BorderSide(color: AppColors.glassBorder),
+                  ),
+                  child: Text(secondaryActionLabel!),
+                ),
+                const SizedBox(height: 12),
+              ],
               ElevatedButton(
                 onPressed: onAction,
                 style: ElevatedButton.styleFrom(

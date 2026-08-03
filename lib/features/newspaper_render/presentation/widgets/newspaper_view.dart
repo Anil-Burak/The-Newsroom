@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../../gatekeeping/domain/news_item.dart';
 import '../../../../core/extensions/string_extensions.dart';
+import '../../data/pdf_export_service.dart';
 
 // ─── Category Color Helper ───────────────────────────────────────────────────
 /// Returns a muted, print-appropriate accent color for each news category.
@@ -74,6 +75,7 @@ class NewspaperView extends StatelessWidget {
             onFullscreenTap: onFullscreenTap,
             onCloseTap: onCloseTap,
             isPlayer: isPlayer,
+            articles: articles,
           ),
           Expanded(
             child: _buildScrollableLayout(context),
@@ -124,6 +126,7 @@ class NewspaperMasthead extends StatelessWidget {
   final VoidCallback? onFullscreenTap;
   final VoidCallback? onCloseTap;
   final bool isPlayer;
+  final List<NewsItem> articles;
 
   const NewspaperMasthead({
     super.key,
@@ -131,6 +134,7 @@ class NewspaperMasthead extends StatelessWidget {
     this.onFullscreenTap,
     this.onCloseTap,
     this.isPlayer = false,
+    required this.articles,
   });
 
   @override
@@ -246,32 +250,47 @@ class NewspaperMasthead extends StatelessWidget {
                   ],
                 ),
               ),
-              // Fullscreen / close buttons
-              if (onFullscreenTap != null || onCloseTap != null)
-                Positioned(
-                  right: 4,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (onFullscreenTap != null)
-                        IconButton(
-                          icon: const Icon(Icons.open_in_full_rounded,
-                              color: _inkColor, size: 18),
-                          onPressed: onFullscreenTap,
-                          tooltip: 'Tam Ekran Oku',
-                          visualDensity: VisualDensity.compact,
-                        ),
-                      if (onCloseTap != null)
-                        IconButton(
-                          icon: const Icon(Icons.close_rounded,
-                              color: _inkColor, size: 22),
-                          onPressed: onCloseTap,
-                          tooltip: 'Kapat',
-                          visualDensity: VisualDensity.compact,
-                        ),
-                    ],
-                  ),
+              // Fullscreen / Download buttons
+              Positioned(
+                right: 4,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (onFullscreenTap != null)
+                      IconButton(
+                        icon: const Icon(Icons.open_in_full_rounded,
+                            color: _inkColor, size: 18),
+                        onPressed: onFullscreenTap,
+                        tooltip: 'Tam Ekran Oku',
+                        visualDensity: VisualDensity.compact,
+                      ),
+                    IconButton(
+                      icon: const Icon(Icons.download_rounded,
+                          color: _inkColor, size: 22),
+                      onPressed: () async {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('PDF oluşturuluyor...')),
+                        );
+                        try {
+                          await PdfExportService.exportAndShareNewspaper(
+                            personaName: personaName,
+                            articles: articles,
+                            isPlayer: isPlayer,
+                          );
+                        } catch (e) {
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('PDF oluşturulurken hata oluştu.')),
+                            );
+                          }
+                        }
+                      },
+                      tooltip: 'İndir',
+                      visualDensity: VisualDensity.compact,
+                    ),
+                  ],
                 ),
+              ),
             ],
           ),
 
