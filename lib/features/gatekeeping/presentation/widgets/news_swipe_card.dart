@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../domain/news_item.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/extensions/string_extensions.dart';
 
 class NewsSwipeCard extends StatelessWidget {
   final NewsItem news;
@@ -102,7 +103,7 @@ class NewsSwipeCard extends StatelessWidget {
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(
-                        news.category.toUpperCase(),
+                        news.category.toUpperCaseTr(),
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 10,

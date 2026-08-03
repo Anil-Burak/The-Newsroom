@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:appinio_swiper/appinio_swiper.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/extensions/string_extensions.dart';
 import '../../../core/constants/app_constants.dart';
 import '../application/gatekeeper_notifier.dart';
 
@@ -557,7 +558,7 @@ class _RejectedPileSheetState extends ConsumerState<_RejectedPileSheet> {
                                         ),
                                         const SizedBox(height: 4),
                                         Text(
-                                          item.category.toUpperCase(),
+                                          item.category.toUpperCaseTr(),
                                           style: Theme.of(context)
                                               .textTheme
                                               .bodySmall

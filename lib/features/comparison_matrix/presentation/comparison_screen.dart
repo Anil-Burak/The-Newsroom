@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/extensions/string_extensions.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../gatekeeping/application/gatekeeper_notifier.dart';
 import '../../gatekeeping/domain/news_item.dart';
@@ -9,6 +10,7 @@ import '../../persona_selection/application/persona_selection_notifier.dart';
 import '../../persona_selection/domain/persona.dart';
 import '../../comparison_matrix/data/ai_newspaper_service.dart';
 import '../../newspaper_render/presentation/widgets/newspaper_view.dart';
+import '../../gatekeeping/presentation/widgets/news_swipe_card.dart';
 
 class ComparisonScreen extends ConsumerStatefulWidget {
   const ComparisonScreen({super.key});
@@ -22,6 +24,7 @@ class _ComparisonScreenState extends ConsumerState<ComparisonScreen>
   late TabController _tabController;
   List<Persona> _selectedPersonas = [];
   bool _initialized = false;
+  bool _isTableView = false;
 
   @override
   void dispose() {
@@ -36,11 +39,44 @@ class _ComparisonScreenState extends ConsumerState<ComparisonScreen>
     _initialized = true;
   }
 
+  Future<void> _onExitRequested() async {
+    final bool? shouldPop = await showDialog<bool>(
+      context: context,
+      barrierDismissible: true,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppColors.inkSurface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text('Ana Sayfaya Dön', 
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(color: AppColors.gold)),
+        content: Text('Ana sayfaya dönmek ister misiniz? İlerlemeniz kaybolacak.', 
+            style: Theme.of(context).textTheme.bodyMedium),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('İptal', style: TextStyle(color: AppColors.textMuted)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Evet', style: TextStyle(color: AppColors.gold, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldPop == true && mounted) {
+      ref.read(gatekeeperProvider.notifier).reset();
+      ref.invalidate(aiNewspaperServiceProvider);
+      context.go(AppConstants.routePersonaSelection);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final aiState = ref.watch(aiNewspaperServiceProvider);
     final gatekeeperState = ref.watch(gatekeeperProvider);
-    final selectedPersonas = ref.watch(personaSelectionProvider).selectedPersonas;
+    final selectedPersonas = ref
+        .watch(personaSelectionProvider)
+        .selectedPersonas;
     final persona = ref.watch(activePersonaProvider); // User's persona
 
     // Initialize or rebuild tab controller if persona count changes
@@ -50,120 +86,203 @@ class _ComparisonScreenState extends ConsumerState<ComparisonScreen>
     }
 
     final now = DateTime.now();
-    final months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+    final months = [
+      'JAN',
+      'FEB',
+      'MAR',
+      'APR',
+      'MAY',
+      'JUN',
+      'JUL',
+      'AUG',
+      'SEP',
+      'OCT',
+      'NOV',
+      'DEC',
+    ];
     final dateString = '${now.day} ${months[now.month - 1]} ${now.year}';
 
     final allTabs = [
       const Tab(text: 'SEN'),
-      ...selectedPersonas.map((p) => Tab(text: p.name.toUpperCase())),
+      ...selectedPersonas.map((p) => Tab(text: p.name.toUpperCaseTr())),
     ];
 
-    return Scaffold(
-      body: Container(
-        color: AppColors.inkDeep,
-        child: SafeArea(
-          child: Column(
-            children: [
-              // Header
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
-                child: Row(
-                  children: [
-                    // Back to home button
-                    GestureDetector(
-                      onTap: () {
-                        ref.read(gatekeeperProvider.notifier).reset();
-                        ref.invalidate(aiNewspaperServiceProvider);
-                        context.go(AppConstants.routePersonaSelection);
-                      },
-                      child: Container(
-                        width: 36,
-                        height: 36,
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+        await _onExitRequested();
+      },
+      child: Scaffold(
+        body: Container(
+          color: AppColors.inkDeep,
+          child: SafeArea(
+            child: Column(
+              children: [
+                // Header
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+                  child: Row(
+                    children: [
+                      // Back to home button
+                      GestureDetector(
+                        onTap: _onExitRequested,
+                        child: Container(
+                          width: 36,
+                          height: 36,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: AppColors.glassSurface,
+                            border: Border.all(color: AppColors.glassBorder),
+                          ),
+                          child: const Icon(
+                            Icons.home_rounded,
+                            color: AppColors.inkBlack,
+                            size: 18,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Karşılaştırma',
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(
+                                  color: AppColors.textMuted,
+                                  letterSpacing: 1.5,
+                                ),
+                          ),
+                          Text(
+                            'Matrisi',
+                            style: Theme.of(context).textTheme.displaySmall,
+                          ),
+                        ],
+                      ),
+                      const Spacer(),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
                         decoration: BoxDecoration(
-                          shape: BoxShape.circle,
                           color: AppColors.glassSurface,
+                          borderRadius: BorderRadius.circular(20),
                           border: Border.all(color: AppColors.glassBorder),
                         ),
-                        child: const Icon(Icons.home_rounded,
-                            color: AppColors.inkBlack, size: 18),
+                        child: Text(
+                          dateString,
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(color: AppColors.textPrimary),
+                        ),
                       ),
+                      const SizedBox(width: 8),
+                      GestureDetector(
+                        onTap: () =>
+                            setState(() => _isTableView = !_isTableView),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          width: 36,
+                          height: 36,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: _isTableView
+                                ? AppColors.gold.withValues(alpha: 0.1)
+                                : AppColors.glassSurface,
+                            border: Border.all(
+                              color: _isTableView
+                                  ? AppColors.gold
+                                  : AppColors.glassBorder,
+                            ),
+                          ),
+                          child: Icon(
+                            _isTableView
+                                ? Icons.tab_rounded
+                                : Icons.view_column_rounded,
+                            color: _isTableView
+                                ? AppColors.gold
+                                : AppColors.inkBlack,
+                            size: 18,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                // Content: Table view or Tab view
+                if (_isTableView)
+                  Expanded(
+                    child: _ComparisonTableView(
+                      allNews:
+                          gatekeeperState.acceptedCards +
+                          gatekeeperState.rejectedCards,
+                      userAcceptedIds: gatekeeperState.acceptedCards
+                          .map((n) => n.id)
+                          .toSet(),
+                      selectedPersonas: selectedPersonas,
+                      aiState: aiState,
                     ),
-                    const SizedBox(width: 16),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                  )
+                else ...[
+                  // Tabs
+                  Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 16),
+                    decoration: BoxDecoration(
+                      color: AppColors.glassSurface,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: AppColors.glassBorder),
+                    ),
+                    child: TabBar(
+                      controller: _tabController,
+                      indicatorSize: TabBarIndicatorSize.tab,
+                      indicator: BoxDecoration(
+                        color: AppColors.gold,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      labelColor: Colors.white,
+                      unselectedLabelColor: AppColors.textMuted,
+                      labelStyle: const TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 11,
+                        letterSpacing: 0.8,
+                      ),
+                      tabs: allTabs,
+                      dividerColor: Colors.transparent,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  // Tab views
+                  Expanded(
+                    child: TabBarView(
+                      controller: _tabController,
                       children: [
-                        Text('Karşılaştırma', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppColors.textMuted, letterSpacing: 1.5)),
-                        Text('Matrisi', style: Theme.of(context).textTheme.displaySmall),
+                        // Player's newspaper
+                        _PlayerNewspaperTab(
+                          accepted: gatekeeperState.acceptedCards,
+                          rejected: gatekeeperState.rejectedCards,
+                          personaName: persona?.name ?? 'You',
+                        ),
+                        // AI newspapers dynamically generated
+                        ...selectedPersonas.map(
+                          (p) => _AINewspaperTab(
+                            personaId: p.id,
+                            personaLabel: p.name,
+                            aiState: aiState,
+                            allNews:
+                                gatekeeperState.acceptedCards +
+                                gatekeeperState.rejectedCards,
+                            userAcceptedIds: gatekeeperState.acceptedCards
+                                .map((n) => n.id)
+                                .toSet(),
+                          ),
+                        ),
                       ],
                     ),
-                    const Spacer(),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: AppColors.glassSurface,
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: AppColors.glassBorder),
-                      ),
-                      child: Text(
-                        dateString,
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: AppColors.textPrimary,
-                            ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              // Tabs
-              Container(
-                margin: const EdgeInsets.symmetric(horizontal: 16),
-                decoration: BoxDecoration(
-                  color: AppColors.glassSurface,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.glassBorder),
-                ),
-                child: TabBar(
-                  controller: _tabController,
-                  indicatorSize: TabBarIndicatorSize.tab,
-                  indicator: BoxDecoration(
-                    color: AppColors.gold,
-                    borderRadius: BorderRadius.circular(10),
                   ),
-                  labelColor: Colors.white,
-                  unselectedLabelColor: AppColors.textMuted,
-                  labelStyle: const TextStyle(
-                      fontWeight: FontWeight.w700, fontSize: 11, letterSpacing: 0.8),
-                  tabs: allTabs,
-                  dividerColor: Colors.transparent,
-                ),
-              ),
-              const SizedBox(height: 8),
-              // Tab views
-              Expanded(
-                child: TabBarView(
-                  controller: _tabController,
-                  children: [
-                    // Player's newspaper
-                    _PlayerNewspaperTab(
-                      accepted: gatekeeperState.acceptedCards,
-                      rejected: gatekeeperState.rejectedCards,
-                      personaName: persona?.name ?? 'You',
-                    ),
-                    // AI newspapers dynamically generated
-                    ...selectedPersonas.map((p) => _AINewspaperTab(
-                          personaId: p.id,
-                          personaLabel: p.name,
-                          aiState: aiState,
-                          allNews: gatekeeperState.acceptedCards +
-                              gatekeeperState.rejectedCards,
-                          userAcceptedIds: gatekeeperState.acceptedCards
-                              .map((n) => n.id)
-                              .toSet(),
-                        )),
-                  ],
-                ),
-              ),
-            ],
+                ],
+              ],
+            ),
           ),
         ),
       ),
@@ -220,8 +339,10 @@ class _AINewspaperTab extends StatelessWidget {
           children: [
             CircularProgressIndicator(color: AppColors.gold),
             SizedBox(height: 16),
-            Text('Yapay zeka editörleri inceliyor...',
-                style: TextStyle(color: AppColors.textSecondary)),
+            Text(
+              'Yapay zeka editörleri inceliyor...',
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
           ],
         ),
       );
@@ -229,16 +350,20 @@ class _AINewspaperTab extends StatelessWidget {
 
     if (aiState.status == AIGenerationStatus.error) {
       return Center(
-        child: Text('Yapay zeka oluşturma başarısız: ${aiState.error}',
-            style: const TextStyle(color: AppColors.rejectRed)),
+        child: Text(
+          'Yapay zeka oluşturma başarısız: ${aiState.error}',
+          style: const TextStyle(color: AppColors.rejectRed),
+        ),
       );
     }
 
     final newspaper = aiState.newspapers[personaId];
     if (newspaper == null) {
       return const Center(
-        child: Text('Yapay zeka sonuçları bekleniyor...',
-            style: TextStyle(color: AppColors.textMuted)),
+        child: Text(
+          'Yapay zeka sonuçları bekleniyor...',
+          style: TextStyle(color: AppColors.textMuted),
+        ),
       );
     }
 
@@ -312,8 +437,10 @@ class _TabViewWithToggleState extends State<_TabViewWithToggle> {
                     foregroundColor: Colors.white,
                   ),
                   icon: const Icon(Icons.close_rounded),
-                  label: const Text('KARŞILAŞTIRMAYA DÖN',
-                      style: TextStyle(fontWeight: FontWeight.w800)),
+                  label: const Text(
+                    'KARŞILAŞTIRMAYA DÖN',
+                    style: TextStyle(fontWeight: FontWeight.w800),
+                  ),
                 ),
               ),
             ],
@@ -337,43 +464,47 @@ class _TabViewWithToggleState extends State<_TabViewWithToggle> {
           ),
           const SizedBox(height: 16),
           _SectionHeader(
-              title: widget.isPlayer
-                  ? '📰 Senin Yayınladıkların'
-                  : '📰 Yayınlanan — ${widget.personaName}'),
-          ...widget.publishedArticles.map((n) => _ArticleRow(
-                news: n,
-                status: 'published',
-                justification: widget.justifications != null
-                    ? (widget.justifications![n.id] ??
+            title: widget.isPlayer
+                ? '📰 Senin Yayınladıkların'
+                : '📰 Yayınlanan — ${widget.personaName}',
+          ),
+          ...widget.publishedArticles.map(
+            (n) => _ArticleRow(
+              news: n,
+              status: 'published',
+              justification: widget.justifications != null
+                  ? (widget.justifications![n.id] ??
                         'Geçerlilik açıklaması bulunmuyor.')
-                    : widget.justificationDefault,
-                isUserAccepted: widget.userAcceptedIds != null
-                    ? widget.userAcceptedIds!.contains(n.id)
-                    : null,
-              )),
+                  : widget.justificationDefault,
+              isUserAccepted: widget.userAcceptedIds != null
+                  ? widget.userAcceptedIds!.contains(n.id)
+                  : null,
+            ),
+          ),
           const SizedBox(height: 16),
           _SectionHeader(
-              title: widget.isPlayer
-                  ? '🗑️ Senin Reddediklerin'
-                  : '🗑️ ${widget.personaName} tarafından reddedilen'),
-          ...widget.rejectedArticles.map((n) => _ArticleRow(
-                news: n,
-                status: 'rejected',
-                justification: widget.justifications != null
-                    ? (widget.justifications![n.id] ??
+            title: widget.isPlayer
+                ? '🗑️ Senin Reddettiklerin'
+                : '🗑️ ${widget.personaName} tarafından reddedilen',
+          ),
+          ...widget.rejectedArticles.map(
+            (n) => _ArticleRow(
+              news: n,
+              status: 'rejected',
+              justification: widget.justifications != null
+                  ? (widget.justifications![n.id] ??
                         'Geçerlilik açıklaması bulunmuyor.')
-                    : widget.justificationDefault,
-                isUserAccepted: widget.userAcceptedIds != null
-                    ? widget.userAcceptedIds!.contains(n.id)
-                    : null,
-              )),
+                  : widget.justificationDefault,
+              isUserAccepted: widget.userAcceptedIds != null
+                  ? widget.userAcceptedIds!.contains(n.id)
+                  : null,
+            ),
+          ),
         ],
       ),
     );
   }
 }
-
-
 
 class _NewspaperBanner extends StatelessWidget {
   final String personaName;
@@ -415,10 +546,15 @@ class _NewspaperBanner extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: AppColors.gold.withValues(alpha: 0.1),
                     shape: BoxShape.circle,
-                    border: Border.all(color: AppColors.gold.withValues(alpha: 0.3)),
+                    border: Border.all(
+                      color: AppColors.gold.withValues(alpha: 0.3),
+                    ),
                   ),
-                  child: const Icon(Icons.newspaper_rounded,
-                      color: AppColors.gold, size: 24),
+                  child: const Icon(
+                    Icons.newspaper_rounded,
+                    color: AppColors.gold,
+                    size: 24,
+                  ),
                 ),
                 const SizedBox(width: 14),
                 Expanded(
@@ -428,7 +564,7 @@ class _NewspaperBanner extends StatelessWidget {
                       Text(
                         isPlayer
                             ? 'SENİN GAZETENİ OKU'
-                            : '${personaName.toUpperCase()} GAZETESİNİ OKU',
+                            : '${personaName.toUpperCaseTr()} GAZETESİNİ OKU',
                         style: const TextStyle(
                           color: AppColors.inkBlack,
                           fontWeight: FontWeight.w900,
@@ -449,8 +585,11 @@ class _NewspaperBanner extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 8),
-                const Icon(Icons.open_in_full_rounded,
-                    color: AppColors.textMuted, size: 16),
+                const Icon(
+                  Icons.open_in_full_rounded,
+                  color: AppColors.textMuted,
+                  size: 16,
+                ),
               ],
             ),
           ),
@@ -468,11 +607,13 @@ class _SectionHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
-      child: Text(title,
-          style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                color: AppColors.inkBlack,
-                letterSpacing: 1.2,
-              )),
+      child: Text(
+        title,
+        style: Theme.of(context).textTheme.labelLarge?.copyWith(
+          color: AppColors.inkBlack,
+          letterSpacing: 1.2,
+        ),
+      ),
     );
   }
 }
@@ -501,12 +642,13 @@ class _ArticleRow extends StatelessWidget {
         decoration: BoxDecoration(
           color: AppColors.inkSurface,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: AppColors.glassBorder,
-          ),
+          border: Border.all(color: AppColors.glassBorder),
         ),
         child: ListTile(
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 4,
+          ),
           leading: Container(
             width: 36,
             height: 36,
@@ -522,18 +664,34 @@ class _ArticleRow extends StatelessWidget {
               size: 18,
             ),
           ),
-          title: Text(news.headline,
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(fontSize: 13),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis),
-          subtitle: Text(news.category,
-              style: const TextStyle(
-                  color: AppColors.textSecondary, fontSize: 11)),
+          title: Text(
+            news.headline,
+            style: Theme.of(
+              context,
+            ).textTheme.titleLarge?.copyWith(fontSize: 13),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+          subtitle: Text(
+            news.category,
+            style: const TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 11,
+            ),
+          ),
           trailing: isUserAccepted == null
-              ? const Icon(Icons.info_outline_rounded, color: AppColors.textMuted, size: 18)
+              ? const Icon(
+                  Icons.info_outline_rounded,
+                  color: AppColors.textMuted,
+                  size: 18,
+                )
               : Icon(
-                  isUserAccepted! ? Icons.check_circle_rounded : Icons.cancel_rounded,
-                  color: isUserAccepted! ? AppColors.publishGreen : AppColors.rejectRed,
+                  isUserAccepted!
+                      ? Icons.check_circle_rounded
+                      : Icons.cancel_rounded,
+                  color: isUserAccepted!
+                      ? AppColors.publishGreen
+                      : AppColors.rejectRed,
                   size: 20,
                 ),
         ),
@@ -558,10 +716,11 @@ class _ArticleRow extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
               decoration: BoxDecoration(
-                color: (status == 'published'
-                        ? AppColors.publishGreen
-                        : AppColors.rejectRed)
-                    .withOpacity(0.1),
+                color:
+                    (status == 'published'
+                            ? AppColors.publishGreen
+                            : AppColors.rejectRed)
+                        .withOpacity(0.1),
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
                   color: status == 'published'
@@ -582,30 +741,360 @@ class _ArticleRow extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 14),
-            Text(news.headline,
-                style: Theme.of(context).textTheme.headlineSmall),
+            Text(
+              news.headline,
+              style: Theme.of(context).textTheme.headlineSmall,
+            ),
             const SizedBox(height: 6),
-            Text(news.summary,
-                style: Theme.of(context).textTheme.bodyMedium,
-                maxLines: 3),
+            Text(
+              news.summary,
+              style: Theme.of(context).textTheme.bodyMedium,
+              maxLines: 3,
+            ),
             const Divider(height: 28, color: AppColors.glassBorder),
-            Text('EDİTÖRÜN YORUMU',
-                style: Theme.of(context)
-                    .textTheme
-                    .bodySmall
-                    ?.copyWith(letterSpacing: 1.5, color: AppColors.gold)),
+            Text(
+              'EDİTÖRÜN YORUMU',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                letterSpacing: 1.5,
+                color: AppColors.gold,
+              ),
+            ),
             const SizedBox(height: 8),
             Text(
               '"$justification"',
               style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    fontStyle: FontStyle.italic,
-                    color: AppColors.textPrimary,
-                    height: 1.6,
-                  ),
+                fontStyle: FontStyle.italic,
+                color: AppColors.textPrimary,
+                height: 1.6,
+              ),
             ),
             const SizedBox(height: 16),
           ],
         ),
+      ),
+    );
+  }
+}
+
+// ─── Comparison Table View (Card Layout) ─────────────────────────────────────
+class _ComparisonTableView extends StatelessWidget {
+  final List<NewsItem> allNews;
+  final Set<String> userAcceptedIds;
+  final List<Persona> selectedPersonas;
+  final AINewspaperState aiState;
+
+  const _ComparisonTableView({
+    required this.allNews,
+    required this.userAcceptedIds,
+    required this.selectedPersonas,
+    required this.aiState,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        // Column headers
+        Container(
+          margin: const EdgeInsets.symmetric(horizontal: 16),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          decoration: BoxDecoration(
+            color: AppColors.gold.withValues(alpha: 0.06),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: AppColors.gold.withValues(alpha: 0.2)),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                flex: 3,
+                child: Text(
+                  'HABER',
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 1.2,
+                  ),
+                ),
+              ),
+              _ColumnHeaderLabel(label: 'SEN'),
+              ...selectedPersonas.map(
+                (p) => _ColumnHeaderLabel(
+                  label: p.name.length > 6
+                      ? p.name.substring(0, 6).toUpperCaseTr()
+                      : p.name.toUpperCaseTr(),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 8),
+        // Card list
+        Expanded(
+          child: ListView.separated(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            itemCount: allNews.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 6),
+            itemBuilder: (context, index) {
+              final news = allNews[index];
+              return _NewsComparisonCard(
+                news: news,
+                isUserAccepted: userAcceptedIds.contains(news.id),
+                selectedPersonas: selectedPersonas,
+                aiState: aiState,
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ColumnHeaderLabel extends StatelessWidget {
+  final String label;
+  const _ColumnHeaderLabel({required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Center(
+        child: Text(
+          label,
+          style: const TextStyle(
+            color: AppColors.textSecondary,
+            fontSize: 9,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 0.8,
+          ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          textAlign: TextAlign.center,
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Compact News Comparison Card ────────────────────────────────────────────
+class _NewsComparisonCard extends StatelessWidget {
+  final NewsItem news;
+  final bool isUserAccepted;
+  final List<Persona> selectedPersonas;
+  final AINewspaperState aiState;
+
+  const _NewsComparisonCard({
+    required this.news,
+    required this.isUserAccepted,
+    required this.selectedPersonas,
+    required this.aiState,
+  });
+
+  void _showNewsDetailsModal(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.all(16),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.75,
+            maxWidth: 400,
+          ),
+          child: Stack(
+            children: [
+              NewsSwipeCard(news: news),
+              Positioned(
+                top: 24,
+                right: 36,
+                child: GestureDetector(
+                  onTap: () => Navigator.of(context).pop(),
+                  child: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.5),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.close, color: Colors.white, size: 20),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () => _showNewsDetailsModal(context),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+        color: AppColors.inkSurface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.glassBorder),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 4,
+            offset: const Offset(0, 1),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          // News info
+          Expanded(
+            flex: 3,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  news.headline,
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    height: 1.3,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  news.category.toUpperCaseTr(),
+                  style: const TextStyle(
+                    color: AppColors.textMuted,
+                    fontSize: 9,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.8,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // User decision
+          Expanded(
+            child: _DecisionIcon(
+              isAccepted: isUserAccepted,
+              isLoading: false,
+              isError: false,
+            ),
+          ),
+          // AI decisions
+          ...selectedPersonas.map((p) {
+            final newspaper = aiState.newspapers[p.id];
+            final isLoading =
+                aiState.status == AIGenerationStatus.loading ||
+                (aiState.status != AIGenerationStatus.error &&
+                    newspaper == null);
+            final isError = aiState.status == AIGenerationStatus.error;
+            final isAccepted =
+                newspaper?.selectedNewsIds.contains(news.id) ?? false;
+
+            return Expanded(
+              child: _DecisionIcon(
+                isAccepted: isAccepted,
+                isLoading: isLoading,
+                isError: isError,
+              ),
+            );
+          }),
+        ],
+      ),
+    ));
+  }
+}
+
+// ─── Decision Icon (✓ / ✗ / ⏳) ─────────────────────────────────────────────
+class _DecisionIcon extends StatelessWidget {
+  final bool isAccepted;
+  final bool isLoading;
+  final bool isError;
+
+  const _DecisionIcon({
+    required this.isAccepted,
+    required this.isLoading,
+    required this.isError,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (isLoading) {
+      return const Center(child: _PulsingIcon());
+    }
+    if (isError) {
+      return Center(
+        child: Icon(
+          Icons.error_outline_rounded,
+          color: AppColors.rejectRed.withValues(alpha: 0.5),
+          size: 18,
+        ),
+      );
+    }
+    return Center(
+      child: Container(
+        width: 26,
+        height: 26,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: isAccepted
+              ? AppColors.publishGreen.withValues(alpha: 0.1)
+              : AppColors.rejectRed.withValues(alpha: 0.1),
+        ),
+        child: Icon(
+          isAccepted ? Icons.check_rounded : Icons.close_rounded,
+          color: isAccepted ? AppColors.publishGreen : AppColors.rejectRed,
+          size: 16,
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Pulsing Hourglass Icon (AI Loading Placeholder) ─────────────────────────
+class _PulsingIcon extends StatefulWidget {
+  const _PulsingIcon();
+
+  @override
+  State<_PulsingIcon> createState() => _PulsingIconState();
+}
+
+class _PulsingIconState extends State<_PulsingIcon>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FadeTransition(
+      opacity: _controller.drive(
+        Tween<double>(
+          begin: 0.25,
+          end: 1.0,
+        ).chain(CurveTween(curve: Curves.easeInOut)),
+      ),
+      child: const Icon(
+        Icons.hourglass_top_rounded,
+        color: AppColors.textMuted,
+        size: 18,
       ),
     );
   }

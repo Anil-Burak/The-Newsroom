@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../../gatekeeping/domain/news_item.dart';
+import '../../../../core/extensions/string_extensions.dart';
 
 // ─── Category Color Helper ───────────────────────────────────────────────────
 /// Returns a muted, print-appropriate accent color for each news category.
@@ -215,7 +216,7 @@ class NewspaperMasthead extends StatelessWidget {
                           Text(
                             isPlayer
                                 ? 'SENİN GAZETEN'
-                                : '${personaName.toUpperCase()} GAZETESİ',
+                                : '${personaName.toUpperCaseTr()} GAZETESİ',
                             style: GoogleFonts.playfairDisplay(
                               fontSize: 26,
                               fontWeight: FontWeight.w900,
@@ -375,7 +376,7 @@ class _HeroArticleCell extends StatelessWidget {
                             borderRadius: BorderRadius.circular(2),
                           ),
                           child: Text(
-                            article.category.toUpperCase(),
+                            article.category.toUpperCaseTr(),
                             style: GoogleFonts.inter(
                               fontSize: 9,
                               letterSpacing: 2,
@@ -414,7 +415,7 @@ class _HeroArticleCell extends StatelessWidget {
                       Container(width: 18, height: 3, color: catColor),
                       const SizedBox(width: 6),
                       Text(
-                        article.category.toUpperCase(),
+                        article.category.toUpperCaseTr(),
                         style: GoogleFonts.inter(
                           fontSize: 9,
                           letterSpacing: 2,
@@ -475,7 +476,7 @@ class _FixedArticleCell extends StatelessWidget {
         children: [
           // Category label
           Text(
-            article.category.toUpperCase(),
+            article.category.toUpperCaseTr(),
             style: GoogleFonts.inter(
               fontSize: 8,
               letterSpacing: 2,
@@ -531,7 +532,7 @@ class _DropCapText extends StatelessWidget {
   Widget build(BuildContext context) {
     if (text.isEmpty) return const SizedBox.shrink();
 
-    final firstChar = text[0].toUpperCase();
+    final firstChar = text[0].toUpperCaseTr();
     final rest = text.substring(1);
 
     return Row(

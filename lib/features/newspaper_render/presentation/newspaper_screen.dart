@@ -62,11 +62,14 @@ class _NewspaperScreenState extends ConsumerState<NewspaperScreen>
         
         final bool? shouldPop = await showDialog<bool>(
           context: context,
-          barrierDismissible: false,
+          barrierDismissible: true,
           builder: (context) => AlertDialog(
             backgroundColor: AppColors.inkSurface,
-            title: const Text('Ana Sayfaya Dön', style: TextStyle(color: AppColors.textPrimary)),
-            content: const Text('Ana sayfaya dönmek ister misiniz? İlerlemeniz kaybolacak.', style: TextStyle(color: AppColors.textSecondary)),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            title: Text('Ana Sayfaya Dön', 
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(color: AppColors.gold)),
+            content: Text('Ana sayfaya dönmek ister misiniz? İlerlemeniz kaybolacak.', 
+                style: Theme.of(context).textTheme.bodyMedium),
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(context).pop(false),
@@ -74,7 +77,7 @@ class _NewspaperScreenState extends ConsumerState<NewspaperScreen>
               ),
               TextButton(
                 onPressed: () => Navigator.of(context).pop(true),
-                child: const Text('Evet', style: TextStyle(color: AppColors.publishGreen)),
+                child: const Text('Evet', style: TextStyle(color: AppColors.gold, fontWeight: FontWeight.bold)),
               ),
             ],
           ),
