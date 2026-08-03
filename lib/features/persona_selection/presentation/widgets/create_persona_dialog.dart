@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:uuid/uuid.dart';
 import '../../domain/persona.dart';
 import '../../../../core/theme/app_theme.dart';
@@ -118,19 +119,19 @@ class _CreatePersonaDialogState extends State<CreatePersonaDialog> {
               const SizedBox(height: 20),
 
               _buildField(_nameController, 'Persona Adı', 'ör. Aktivist Blog',
-                  readOnly: isReadOnly),
+                  maxLength: 30, readOnly: isReadOnly),
               const SizedBox(height: 12),
               _buildField(_descController, 'Açıklama',
                   'Bu editörü öne çıkaran ne?',
-                  maxLines: 2, readOnly: isReadOnly),
+                  maxLines: 2, maxLength: 100, readOnly: isReadOnly),
               const SizedBox(height: 12),
               _buildField(_biasController, 'Tarafçılık Açıklaması',
                   'ör. Sol eğilimli, çevre dostu',
-                  readOnly: isReadOnly),
+                  maxLength: 100, readOnly: isReadOnly),
               const SizedBox(height: 12),
               _buildField(_ethicsController, 'Etik Standartlar',
                   'ör. Yüksek – her şeyi doğrular',
-                  readOnly: isReadOnly),
+                  maxLength: 100, readOnly: isReadOnly),
               const SizedBox(height: 20),
 
               // Clickbait slider
@@ -139,7 +140,7 @@ class _CreatePersonaDialogState extends State<CreatePersonaDialog> {
                 children: [
                   Expanded(
                     child: Text(
-                      'Clickbait Eşiği (Örn: %100 her haberi tık tuzağı olarak görür, %0 hiçbirini görmez)',
+                      'Clickbait Hassasiyeti (Yüksek = Sansasyonel haberlere öncelik verir.)',
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
                   ),
@@ -188,16 +189,35 @@ class _CreatePersonaDialogState extends State<CreatePersonaDialog> {
     String label,
     String hint, {
     int maxLines = 1,
+    int? maxLength,
     bool readOnly = false,
   }) {
     return TextFormField(
       controller: controller,
       maxLines: maxLines,
+      maxLength: maxLength,
       readOnly: readOnly,
+      inputFormatters: maxLength != null
+          ? [LengthLimitingTextInputFormatter(maxLength)]
+          : null,
       style: Theme.of(context)
           .textTheme
           .bodyMedium
           ?.copyWith(color: AppColors.textPrimary),
+      buildCounter: (context,
+          {required currentLength, required isFocused, required maxLength}) {
+        if (maxLength == null) return null;
+        if (currentLength < maxLength) return null;
+        // Only show counter when limit is reached
+        return Text(
+          '$currentLength/$maxLength',
+          style: const TextStyle(
+            color: AppColors.rejectRed,
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+          ),
+        );
+      },
       decoration: InputDecoration(
         labelText: label,
         hintText: hint,

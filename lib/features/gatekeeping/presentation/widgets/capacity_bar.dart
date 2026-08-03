@@ -48,7 +48,7 @@ class CapacityBar extends StatelessWidget {
                   margin: const EdgeInsets.symmetric(horizontal: 2),
                   decoration: BoxDecoration(
                     color: filled
-                        ? (current > min
+                        ? (current >= min
                             ? AppColors.publishGreen
                             : AppColors.gold)
                         : AppColors.glassSurface,

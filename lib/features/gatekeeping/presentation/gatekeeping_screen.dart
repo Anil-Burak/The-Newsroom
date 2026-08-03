@@ -129,7 +129,7 @@ class _GatekeepingScreenState extends ConsumerState<GatekeepingScreen> {
         title: 'Yeterli Haber Yok!',
         subtitle:
             'Yayınlamak için en az ${AppConstants.minPublishedArticles} habere ihtiyacınız var. Reddedilenleri kurtarın.',
-        actionLabel: 'REDDEDILENLERI GÖRÜŞÜN',
+        actionLabel: 'REDDEDİLENLERİ GÖRÜŞÜN',
         onAction: () {
           Navigator.pop(context);
           _showRejectedPile();
@@ -143,6 +143,8 @@ class _GatekeepingScreenState extends ConsumerState<GatekeepingScreen> {
       context: context,
       backgroundColor: AppColors.inkSurface,
       isScrollControlled: true,
+      isDismissible: false,
+      enableDrag: false,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -218,7 +220,44 @@ class _GatekeepingScreenState extends ConsumerState<GatekeepingScreen> {
                     ? const Center(
                         child: CircularProgressIndicator(color: AppColors.gold))
                     : state.deckIsEmpty
-                        ? const SizedBox.shrink()
+                        ? (!state.isAtMinimum && state.rejectedCards.isNotEmpty)
+                            ? Center(
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 32),
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Container(
+                                        width: 80,
+                                        height: 80,
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          color: AppColors.rejectRed.withValues(alpha: 0.1),
+                                          border: Border.all(color: AppColors.rejectRed, width: 2),
+                                        ),
+                                        child: const Icon(Icons.warning_amber_rounded,
+                                            color: AppColors.rejectRed, size: 40),
+                                      ),
+                                      const SizedBox(height: 20),
+                                      Text(
+                                        'Yeterli Haber Yok',
+                                        style: Theme.of(context).textTheme.headlineSmall,
+                                        textAlign: TextAlign.center,
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        'En az ${AppConstants.minPublishedArticles} haber gerekli. Reddedilenlerden kurtarabilirsiniz.',
+                                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                              color: AppColors.textSecondary,
+                                            ),
+                                        textAlign: TextAlign.center,
+                                      ),
+
+                                    ],
+                                  ),
+                                ),
+                              )
+                            : const SizedBox.shrink()
                         : AppinioSwiper(
                             controller: _swiperController,
                             cardCount: state.upcomingCards.length,
@@ -381,198 +420,199 @@ class _RejectedPileSheetState extends ConsumerState<_RejectedPileSheet> {
   @override
   Widget build(BuildContext context) {
     final rejected = ref.watch(gatekeeperProvider).rejectedCards;
+    final screenHeight = MediaQuery.of(context).size.height;
 
-    return DraggableScrollableSheet(
-      expand: false,
-      initialChildSize: 0.7,
-      maxChildSize: 0.9,
-      minChildSize: 0.4,
-      builder: (_, scrollController) => Column(
-        children: [
-          const SizedBox(height: 12),
-          Container(
-            width: 40,
-            height: 4,
-            decoration: BoxDecoration(
-              color: AppColors.glassBorder,
-              borderRadius: BorderRadius.circular(2),
+    return PopScope(
+      canPop: false,
+      child: SizedBox(
+        height: screenHeight * 0.75,
+        child: Column(
+          children: [
+            const SizedBox(height: 12),
+            // Static handle bar (non-draggable, visual only)
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: AppColors.glassBorder,
+                borderRadius: BorderRadius.circular(2),
+              ),
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 20, 20, 10),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text('Reddedilen Haberler',
-                    style: Theme.of(context).textTheme.headlineSmall),
-                if (rejected.isNotEmpty)
-                  TextButton(
-                    onPressed: () {
-                      setState(() {
-                        if (_selectedIds.length == rejected.length) {
-                          _selectedIds.clear();
-                        } else {
-                          _selectedIds.addAll(rejected.map((e) => e.id));
-                        }
-                      });
-                    },
-                    child: Text(
-                      _selectedIds.length == rejected.length
-                          ? 'Tümünü Kaldır'
-                          : 'Tümünü Seç',
-                      style: const TextStyle(
-                          color: AppColors.gold, fontWeight: FontWeight.bold),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 10),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text('Reddedilen Haberler',
+                      style: Theme.of(context).textTheme.headlineSmall),
+                  if (rejected.isNotEmpty)
+                    TextButton(
+                      onPressed: () {
+                        setState(() {
+                          if (_selectedIds.length == rejected.length) {
+                            _selectedIds.clear();
+                          } else {
+                            _selectedIds.addAll(rejected.map((e) => e.id));
+                          }
+                        });
+                      },
+                      child: Text(
+                        _selectedIds.length == rejected.length
+                            ? 'Tümünü Kaldır'
+                            : 'Tümünü Seç',
+                        style: const TextStyle(
+                            color: AppColors.gold, fontWeight: FontWeight.bold),
+                      ),
                     ),
-                  ),
-              ],
+                ],
+              ),
             ),
-          ),
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 20),
-            child: Text(
-              'Tekrar değerlendirmek istediğiniz haberleri seçin ve "Tamam"a basın.',
-              style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 20),
+              child: Text(
+                'Tekrar değerlendirmek istediğiniz haberleri seçin ve "Tamam"a basın.',
+                style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+              ),
             ),
-          ),
-          const SizedBox(height: 12),
-          Expanded(
-            child: rejected.isEmpty
-                ? const Center(
-                    child: Text(
-                      'Reddedilen haber bulunmuyor.',
-                      style: TextStyle(color: AppColors.textMuted),
-                    ),
-                  )
-                : ListView.separated(
-                    controller: scrollController,
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    itemCount: rejected.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 12),
-                    itemBuilder: (context, i) {
-                      final item = rejected[i];
-                      final isSelected = _selectedIds.contains(item.id);
-                      return Material(
-                        color: Colors.transparent,
-                        child: InkWell(
-                          borderRadius: BorderRadius.circular(12),
-                          onTap: () {
-                            setState(() {
-                              if (isSelected) {
-                                _selectedIds.remove(item.id);
-                              } else {
-                                _selectedIds.add(item.id);
-                              }
-                            });
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: isSelected
-                                  ? AppColors.gold.withValues(alpha: 0.08)
-                                  : AppColors.glassSurface,
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
+            const SizedBox(height: 12),
+            Expanded(
+              child: rejected.isEmpty
+                  ? const Center(
+                      child: Text(
+                        'Reddedilen haber bulunmuyor.',
+                        style: TextStyle(color: AppColors.textMuted),
+                      ),
+                    )
+                  : ListView.separated(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      itemCount: rejected.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 12),
+                      itemBuilder: (context, i) {
+                        final item = rejected[i];
+                        final isSelected = _selectedIds.contains(item.id);
+                        return Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(12),
+                            onTap: () {
+                              setState(() {
+                                if (isSelected) {
+                                  _selectedIds.remove(item.id);
+                                } else {
+                                  _selectedIds.add(item.id);
+                                }
+                              });
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
                                 color: isSelected
-                                    ? AppColors.gold
-                                    : AppColors.glassBorder,
-                                width: isSelected ? 1.5 : 1.0,
+                                    ? AppColors.gold.withValues(alpha: 0.08)
+                                    : AppColors.glassSurface,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: isSelected
+                                      ? AppColors.gold
+                                      : AppColors.glassBorder,
+                                  width: isSelected ? 1.5 : 1.0,
+                                ),
+                              ),
+                              child: Row(
+                                children: [
+                                  Checkbox(
+                                    value: isSelected,
+                                    activeColor: AppColors.gold,
+                                    checkColor: Colors.white,
+                                    onChanged: (val) {
+                                      setState(() {
+                                        if (val == true) {
+                                          _selectedIds.add(item.id);
+                                        } else {
+                                          _selectedIds.remove(item.id);
+                                        }
+                                      });
+                                    },
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          item.headline,
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .titleMedium
+                                              ?.copyWith(
+                                                fontWeight: isSelected
+                                                    ? FontWeight.bold
+                                                    : FontWeight.normal,
+                                                color: isSelected
+                                                    ? AppColors.gold
+                                                    : AppColors.textPrimary,
+                                              ),
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          item.category.toUpperCase(),
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .bodySmall
+                                              ?.copyWith(
+                                                color: AppColors.textSecondary,
+                                                fontSize: 11,
+                                              ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
-                            child: Row(
-                              children: [
-                                Checkbox(
-                                  value: isSelected,
-                                  activeColor: AppColors.gold,
-                                  checkColor: Colors.white,
-                                  onChanged: (val) {
-                                    setState(() {
-                                      if (val == true) {
-                                        _selectedIds.add(item.id);
-                                      } else {
-                                        _selectedIds.remove(item.id);
-                                      }
-                                    });
-                                  },
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        item.headline,
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .titleMedium
-                                            ?.copyWith(
-                                              fontWeight: isSelected
-                                                  ? FontWeight.bold
-                                                  : FontWeight.normal,
-                                              color: isSelected
-                                                  ? AppColors.gold
-                                                  : AppColors.textPrimary,
-                                            ),
-                                        maxLines: 2,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        item.category.toUpperCase(),
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .bodySmall
-                                            ?.copyWith(
-                                              color: AppColors.textSecondary,
-                                              fontSize: 11,
-                                            ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
                           ),
-                        ),
-                      );
-                    },
-                  ),
-          ),
-          Container(
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
-            decoration: const BoxDecoration(
-              color: AppColors.inkSurface,
-              border: Border(top: BorderSide(color: AppColors.glassBorder)),
+                        );
+                      },
+                    ),
             ),
-            child: ElevatedButton(
-              onPressed: _selectedIds.isEmpty
-                  ? null
-                  : () {
-                      final selectedItems = rejected
-                          .where((item) => _selectedIds.contains(item.id))
-                          .toList();
-                      ref
-                          .read(gatekeeperProvider.notifier)
-                          .rescueMultipleRejectedCards(selectedItems);
-                      Navigator.pop(context);
-                    },
-              style: ElevatedButton.styleFrom(
-                minimumSize: const Size(double.infinity, 50),
-                backgroundColor: AppColors.gold,
-                foregroundColor: Colors.white,
-                disabledBackgroundColor: AppColors.glassSurface,
-                disabledForegroundColor: AppColors.textMuted,
+            Container(
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+              decoration: const BoxDecoration(
+                color: AppColors.inkSurface,
+                border: Border(top: BorderSide(color: AppColors.glassBorder)),
               ),
-              child: Text(
-                _selectedIds.isEmpty
-                    ? 'TAMAM'
-                    : 'TAMAM (${_selectedIds.length} HABERİ KURTAR)',
-                style:
-                    const TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
+              child: ElevatedButton(
+                onPressed: _selectedIds.isEmpty
+                    ? null
+                    : () {
+                        final selectedItems = rejected
+                            .where((item) => _selectedIds.contains(item.id))
+                            .toList();
+                        ref
+                            .read(gatekeeperProvider.notifier)
+                            .rescueMultipleRejectedCards(selectedItems);
+                        Navigator.pop(context);
+                      },
+                style: ElevatedButton.styleFrom(
+                  minimumSize: const Size(double.infinity, 50),
+                  backgroundColor: AppColors.gold,
+                  foregroundColor: Colors.white,
+                  disabledBackgroundColor: AppColors.glassSurface,
+                  disabledForegroundColor: AppColors.textMuted,
+                ),
+                child: Text(
+                  _selectedIds.isEmpty
+                      ? 'TAMAM'
+                      : 'TAMAM (${_selectedIds.length} HABERİ KURTAR)',
+                  style:
+                      const TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
