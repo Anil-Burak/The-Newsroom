@@ -131,7 +131,7 @@ const List<Map<String, dynamic>> kSeedNewsPool = [
     "id": "news_009",
     "headline": "Teknoloji Devinden Yapay Zeka Hamlesi",
     "summary": "Dünyaca ünlü yazılım şirketi, karmaşık metin ve görselleri anında işleyebilen yeni yapay zeka asistanını tanıttı.",
-    "imageUrl": "images/9.jpg",
+    "imageUrl": "images/9.png",
     "category": "Teknoloji",
     "sensationalismScore": 50,
     "biasIndex": 5,

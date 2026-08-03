@@ -129,7 +129,7 @@ class AINewspaperService extends StateNotifier<AINewspaperState> {
       }
       exampleJson.write('}');
 
-      final systemPrompt = '''Sen "GateKeeper" adlı habercilik etiği ve yayın yönetmenliği oyununun simülasyon motorusun. 
+      final systemPrompt = '''Sen "Haber Geçidi" adlı habercilik etiği ve yayın yönetmenliği oyununun simülasyon motorusun. 
 Görevin, sana verilen haber havuzundaki içerikleri $personaCount farklı editör (persona) gözünden incelemek ve yayınlanacak haberleri seçmektir.
 
 SİSTEM KURALLARI:
