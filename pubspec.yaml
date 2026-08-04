@@ -25,7 +25,6 @@ dependencies:
   appinio_swiper: ^2.1.1
 
   # ── Dynamic Newspaper Layouts & PDF ───────────────────────────────────────
-  flutter_staggered_grid_view: ^0.7.0
   pdf: ^3.11.1
   printing: ^5.12.0
 
@@ -38,14 +37,9 @@ dependencies:
   # ── Routing ───────────────────────────────────────────────────────────────
   go_router: ^14.2.7
 
-  # ── Animations ────────────────────────────────────────────────────────────
-  lottie: ^3.1.2
-  shimmer: ^3.0.0
 
   # ── Utilities ─────────────────────────────────────────────────────────────
   uuid: ^4.4.2
-  equatable: ^2.0.5
-  cupertino_icons: ^1.0.8
 
 dev_dependencies:
   flutter_test:
@@ -60,7 +54,7 @@ flutter_launcher_icons:
   android: true
   ios: true
   remove_alpha_ios: true
-  image_path: "images/ikon.png"
+  image_path: "images/ikon2.png"
 
 flutter:
   uses-material-design: true
